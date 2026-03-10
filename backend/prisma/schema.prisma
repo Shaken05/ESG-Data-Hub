@@ -1,0 +1,110 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String    // hashed password
+  name      String
+  role      String    @default("viewer") // admin, editor, viewer
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@map("users")
+}
+
+// ESG Metrics catalog
+model Metric {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  category    String        // E, S, or G
+  unit        String?
+  standard    String?       // GRI, STARS, SDG
+  status      String        @default("PLANNED")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  metricLinks MetricLink[]
+  
+  @@map("metrics")
+}
+
+// Data sources
+model DataSource {
+  id              Int           @id @default(autoincrement())
+  name            String
+  type            String        // EXCEL, API, SURVEY, ERP
+  format          String?
+  updateFrequency String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  metricLinks     MetricLink[]
+  
+  @@map("data_sources")
+}
+
+// Departments (responsible units)
+model Department {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  owner       String?
+  email       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  metricLinks MetricLink[]
+  
+  @@map("departments")
+}
+
+// Storage locations
+model StorageLocation {
+  id            Int           @id @default(autoincrement())
+  locationName  String
+  type          String        // DRIVE, SERVER, CLOUD, SHAREPOINT
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  metricLinks   MetricLink[]
+  
+  @@map("storage_locations")
+}
+
+// Link table connecting metrics, sources, departments, and storage
+model MetricLink {
+  id           Int               @id @default(autoincrement())
+  metricId     Int
+  sourceId     Int?
+  departmentId Int?
+  storageId    Int?
+  qualityScore Int?              // 0-100
+  lastUpdate   DateTime?
+  issues       String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  
+  // Relations
+  metric       Metric            @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  source       DataSource?       @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  storage      StorageLocation?  @relation(fields: [storageId], references: [id], onDelete: SetNull)
+  
+  @@map("metric_links")
+}
