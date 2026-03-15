@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAudit } from '../lib/audit.js';
 
 const prisma = new PrismaClient();
 
@@ -52,14 +53,17 @@ export const getStorageLocationById = async (req, res) => {
 export const createStorageLocation = async (req, res) => {
   try {
     const { locationName, type } = req.body;
-    
     const location = await prisma.storageLocation.create({
-      data: {
-        locationName,
-        type
-      }
+      data: { locationName, type }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'storage_location',
+      entityId: location.id,
+      action: 'CREATE',
+      newValues: location
+    });
     res.status(201).json(location);
   } catch (error) {
     res.status(400).json({ error: 'Failed to create storage location', message: error.message });
@@ -71,15 +75,20 @@ export const updateStorageLocation = async (req, res) => {
   try {
     const { id } = req.params;
     const { locationName, type } = req.body;
-    
+    const previous = await prisma.storageLocation.findUnique({ where: { id: parseInt(id) } });
     const location = await prisma.storageLocation.update({
       where: { id: parseInt(id) },
-      data: {
-        locationName,
-        type
-      }
+      data: { locationName, type }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'storage_location',
+      entityId: location.id,
+      action: 'UPDATE',
+      oldValues: previous,
+      newValues: location
+    });
     res.json(location);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update storage location', message: error.message });
@@ -90,11 +99,18 @@ export const updateStorageLocation = async (req, res) => {
 export const deleteStorageLocation = async (req, res) => {
   try {
     const { id } = req.params;
-    
+    const previous = await prisma.storageLocation.findUnique({ where: { id: parseInt(id) } });
     await prisma.storageLocation.delete({
       where: { id: parseInt(id) }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'storage_location',
+      entityId: parseInt(id),
+      action: 'DELETE',
+      oldValues: previous
+    });
     res.json({ message: 'Storage location deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: 'Failed to delete storage location', message: error.message });

@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { logAudit } from '../lib/audit.js';
 
 const prisma = new PrismaClient();
+
+function serializeMetric(m) {
+  if (!m) return null;
+  const { metricLinks, ...rest } = m;
+  return rest;
+}
 
 // Get all metrics with optional filters
 export const getMetrics = async (req, res) => {
@@ -74,19 +81,29 @@ export const createMetric = async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to create metrics' });
     }
     
-    const { name, description, category, unit, standard, status } = req.body;
-    
+    const { name, description, category, unit, standard, standards, scope, subcategory, status } = req.body;
+    const standardsStr = Array.isArray(standards) ? JSON.stringify(standards) : (standards ?? null);
     const metric = await prisma.metric.create({
       data: {
         name,
         description,
         category,
         unit,
-        standard,
+        standard: standard ?? null,
+        standards: standardsStr,
+        scope: scope || null,
+        subcategory: subcategory || null,
         status: status || 'PLANNED'
       }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'metric',
+      entityId: metric.id,
+      action: 'CREATE',
+      newValues: serializeMetric(metric)
+    });
     res.status(201).json(metric);
   } catch (error) {
     res.status(400).json({ error: 'Failed to create metric', message: error.message });
@@ -102,8 +119,9 @@ export const updateMetric = async (req, res) => {
     }
     
     const { id } = req.params;
-    const { name, description, category, unit, standard, status } = req.body;
-    
+    const { name, description, category, unit, standard, standards, scope, subcategory, status } = req.body;
+    const standardsStr = Array.isArray(standards) ? JSON.stringify(standards) : (standards ?? null);
+    const previous = await prisma.metric.findUnique({ where: { id: parseInt(id) } });
     const metric = await prisma.metric.update({
       where: { id: parseInt(id) },
       data: {
@@ -111,11 +129,22 @@ export const updateMetric = async (req, res) => {
         description,
         category,
         unit,
-        standard,
+        standard: standard ?? null,
+        standards: standardsStr,
+        scope: scope || null,
+        subcategory: subcategory || null,
         status
       }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'metric',
+      entityId: metric.id,
+      action: 'UPDATE',
+      oldValues: serializeMetric(previous),
+      newValues: serializeMetric(metric)
+    });
     res.json(metric);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update metric', message: error.message });
@@ -131,11 +160,18 @@ export const deleteMetric = async (req, res) => {
     }
     
     const { id } = req.params;
-    
+    const previous = await prisma.metric.findUnique({ where: { id: parseInt(id) } });
     await prisma.metric.delete({
       where: { id: parseInt(id) }
     });
-    
+    await logAudit({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      entityType: 'metric',
+      entityId: parseInt(id),
+      action: 'DELETE',
+      oldValues: serializeMetric(previous)
+    });
     res.json({ message: 'Metric deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: 'Failed to delete metric', message: error.message });

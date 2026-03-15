@@ -21,11 +21,11 @@
         
         <div class="flex flex-wrap gap-4 text-sm text-gray-500">
           <div v-if="metric.unit" class="flex items-center">
-            <span class="font-medium">Unit:</span>
+            <span class="font-medium">{{ t('common.unit') }}:</span>
             <span class="ml-1">{{ metric.unit }}</span>
           </div>
           <div v-if="metric.standard" class="flex items-center">
-            <span class="font-medium">Standard:</span>
+            <span class="font-medium">{{ t('metricDetails.standard') }}:</span>
             <span class="ml-1">{{ metric.standard }}</span>
           </div>
         </div>
@@ -53,6 +53,9 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 defineProps({
   metric: {
     type: Object,

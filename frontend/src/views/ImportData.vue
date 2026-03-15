@@ -3,37 +3,37 @@
     <!-- Permission Check -->
     <div v-if="!authStore.isEditor" class="card bg-red-50 border border-red-200">
       <p class="text-red-800 font-semibold">
-        🔒 Access Denied: Only Editors and Administrators can import data.
+        🔒 {{ t('import.accessDenied') }}
       </p>
-      <p class="text-red-600 text-sm mt-2">Your current role: <strong>{{ authStore.user?.role }}</strong></p>
+      <p class="text-red-600 text-sm mt-2">{{ t('import.yourRole') }} <strong>{{ authStore.user?.role }}</strong></p>
     </div>
 
     <template v-else>
       <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gray-900">Import Data from Google Drive</h1>
+        <h1 class="text-3xl font-bold text-gray-900">{{ t('import.importTitle') }}</h1>
       </div>
 
       <!-- Instructions Card -->
       <div class="card bg-blue-50 border border-blue-200">
-        <h2 class="text-lg font-semibold text-blue-900 mb-2">📋 How to Import</h2>
+        <h2 class="text-lg font-semibold text-blue-900 mb-2">📋 {{ t('import.howToImport') }}</h2>
         <ol class="list-decimal list-inside space-y-2 text-sm text-blue-800">
-          <li>Open your Google Sheet with ESG data</li>
-          <li>Click <strong>File → Share → Publish to web</strong></li>
-          <li>Choose "Link" and "Entire Document" or specific sheet</li>
-          <li>Copy the URL and paste it below</li>
-          <li>Select data type and click Import</li>
+          <li>{{ t('import.step1') }}</li>
+          <li>{{ t('import.step2') }}</li>
+          <li>{{ t('import.step3') }}</li>
+          <li>{{ t('import.step4') }}</li>
+          <li>{{ t('import.step5') }}</li>
         </ol>
       </div>
 
       <!-- Import Form -->
       <div class="card">
-        <h2 class="text-xl font-semibold mb-4">Import from Google Sheets</h2>
+        <h2 class="text-xl font-semibold mb-4">{{ t('import.formTitle') }}</h2>
         
         <div class="space-y-4">
           <!-- Data Type Selection -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              What would you like to import?
+              {{ t('import.whatToImport') }}
             </label>
             <div class="flex gap-4">
               <label class="flex items-center">
@@ -43,7 +43,7 @@
                   value="metrics" 
                   class="mr-2"
                 />
-                <span>📊 Metrics</span>
+                <span>📊 {{ t('import.metricsOption') }}</span>
               </label>
               <label class="flex items-center">
                 <input 
@@ -52,7 +52,7 @@
                   value="sources" 
                   class="mr-2"
                 />
-                <span>📁 Data Sources</span>
+                <span>📁 {{ t('import.sourcesOption') }}</span>
               </label>
             </div>
           </div>
@@ -60,16 +60,16 @@
           <!-- Google Sheets URL Input -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              Google Sheets URL
+              {{ t('import.sheetsUrl') }}
             </label>
             <input
               v-model="sheetsUrl"
               type="url"
-              placeholder="https://docs.google.com/spreadsheets/d/..."
+              :placeholder="t('import.sheetsUrlPlaceholder')"
               class="input w-full"
             />
             <p class="text-xs text-gray-500 mt-1">
-              Make sure the sheet is published or shared publicly
+              {{ t('import.sheetsNote') }}
             </p>
           </div>
 
@@ -80,13 +80,13 @@
               :disabled="!sheetsUrl || !importType || loading"
               class="btn-primary"
             >
-              {{ loading ? 'Importing...' : '📥 Import Data' }}
+              {{ loading ? t('import.importing') : '📥 ' + t('import.importButton') }}
             </button>
             <button
               @click="showTemplate"
               class="btn-secondary"
             >
-              📋 View Template
+              📋 {{ t('import.viewTemplate') }}
             </button>
           </div>
         </div>
@@ -94,7 +94,7 @@
 
       <!-- Template Info -->
       <div v-if="templateVisible" class="card bg-gray-50">
-        <h3 class="text-lg font-semibold mb-3">Template Format</h3>
+        <h3 class="text-lg font-semibold mb-3">{{ t('import.templateFormat') }}</h3>
         
         <div v-if="importType === 'metrics'">
           <p class="text-sm text-gray-600 mb-2">Your Google Sheet should have these columns:</p>
@@ -128,12 +128,12 @@
       <!-- Results -->
       <div v-if="importResult" class="card" :class="importResult.success ? 'bg-green-50' : 'bg-red-50'">
         <h3 class="text-lg font-semibold mb-2" :class="importResult.success ? 'text-green-900' : 'text-red-900'">
-          {{ importResult.success ? '✅ Import Successful' : '❌ Import Failed' }}
+          {{ importResult.success ? '✅ ' + t('import.importSuccess') : '❌ ' + t('import.importFailed') }}
         </h3>
         <div class="text-sm" :class="importResult.success ? 'text-green-800' : 'text-red-800'">
-          <p v-if="importResult.imported">Imported {{ importResult.imported }} items successfully</p>
+          <p v-if="importResult.imported">{{ t('import.importedCount', { count: importResult.imported }) }}</p>
           <p v-if="importResult.errors > 0" class="text-orange-600">
-            {{ importResult.errors }} items failed to import
+            {{ t('import.failedCount', { count: importResult.errors }) }}
           </p>
           <div v-if="importResult.errorDetails && importResult.errorDetails.length > 0" class="mt-3">
             <p class="font-medium">Errors:</p>
@@ -156,9 +156,11 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const API_URL = 'http://localhost:3000/api';
 

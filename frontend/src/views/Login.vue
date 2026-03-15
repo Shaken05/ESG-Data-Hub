@@ -6,28 +6,28 @@
         <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg shadow-lg mb-4">
           <span class="text-3xl font-bold text-primary-600">E</span>
         </div>
-        <h1 class="text-3xl font-bold text-white">ESG Inventory</h1>
-        <p class="text-primary-100 mt-2">Environmental, Social, Governance Data Management</p>
+        <h1 class="text-3xl font-bold text-white">{{ t('login.title') }}</h1>
+        <p class="text-primary-100 mt-2">{{ t('login.subtitle') }}</p>
       </div>
 
       <!-- Login Card -->
       <div class="bg-white rounded-lg shadow-2xl p-8">
         <!-- Login Form -->
         <form @submit.prevent="handleLogin" class="space-y-4">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Login</h2>
+          <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">{{ t('login.formTitle') }}</h2>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('login.email') }}</label>
             <input
               v-model="loginForm.email"
               type="email"
-              placeholder="your@email.com"
+              :placeholder="t('login.emailPlaceholder')"
               class="input w-full"
               required
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('login.password') }}</label>
             <input
               v-model="loginForm.password"
               type="password"
@@ -38,11 +38,11 @@
           </div>
 
           <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
-            <p class="font-medium mb-2">📋 Test Credentials:</p>
+            <p class="font-medium mb-2">📋 {{ t('login.testCredentials') }}</p>
             <ul class="space-y-1">
-              <li><strong>Admin:</strong> admin@university.edu / admin123</li>
-              <li><strong>Editor:</strong> editor@university.edu / editor123</li>
-              <li><strong>Viewer:</strong> viewer@university.edu / viewer123</li>
+              <li><strong>{{ t('login.admin') }}:</strong> admin@university.edu / admin123</li>
+              <li><strong>{{ t('login.editor') }}:</strong> editor@university.edu / editor123</li>
+              <li><strong>{{ t('login.viewer') }}:</strong> viewer@university.edu / viewer123</li>
             </ul>
           </div>
 
@@ -51,7 +51,7 @@
             :disabled="authStore.loading"
             class="btn-primary w-full"
           >
-            {{ authStore.loading ? 'Logging in...' : 'Login' }}
+            {{ authStore.loading ? t('login.loggingIn') : t('login.submit') }}
           </button>
         </form>
 
@@ -63,7 +63,7 @@
 
       <!-- Footer -->
       <div class="text-center mt-8 text-primary-100 text-sm">
-        <p>ESG Data Inventory System © 2026</p>
+        <p>{{ t('login.footer') }}</p>
       </div>
     </div>
   </div>
@@ -72,8 +72,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/authStore'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 

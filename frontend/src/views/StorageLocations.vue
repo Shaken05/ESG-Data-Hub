@@ -1,18 +1,18 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-gray-900">Storage Locations</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{{ t('storage.title') }}</h1>
       <button v-if="authStore.isEditor" @click="showCreateModal = true" class="btn-primary">
-        + Add Storage Location
+        + {{ t('storage.addLocation') }}
       </button>
     </div>
     
     <div v-if="loading" class="text-center py-12">
-      <p class="text-gray-500">Loading storage locations...</p>
+      <p class="text-gray-500">{{ t('storage.loading') }}</p>
     </div>
     
     <div v-else-if="locations.length === 0" class="card text-center py-12">
-      <p class="text-gray-500">No storage locations found.</p>
+      <p class="text-gray-500">{{ t('storage.noLocations') }}</p>
     </div>
     
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -31,16 +31,16 @@
         
         <div class="text-sm text-gray-600">
           <div v-if="location.metricLinks">
-            <span class="font-medium">Metrics stored:</span> {{ location.metricLinks.length }}
+            <span class="font-medium">{{ t('storage.metricsStored') }}:</span> {{ location.metricLinks.length }}
           </div>
         </div>
         
         <div class="flex space-x-2 mt-4 pt-4 border-t border-gray-200">
           <button v-if="authStore.isEditor" @click="editLocation(location)" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
-            Edit
+            {{ t('common.edit') }}
           </button>
           <button v-if="authStore.isEditor" @click="deleteLocation(location.id)" class="text-red-600 hover:text-red-700 text-sm font-medium">
-            Delete
+            {{ t('common.delete') }}
           </button>
         </div>
       </div>
@@ -51,7 +51,7 @@
       <div class="bg-white rounded-lg max-w-md w-full">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold">{{ showEditModal ? 'Edit' : 'Create' }} Storage Location</h2>
+            <h2 class="text-2xl font-bold">{{ showEditModal ? t('storage.editLocation') : t('storage.createLocation') }}</h2>
             <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -61,14 +61,14 @@
           
           <form @submit.prevent="handleSubmit" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Location Name *</label>
-              <input v-model="form.locationName" type="text" required class="input-field" placeholder="e.g., Google Drive - ESG Folder" />
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('storage.locationName') }} *</label>
+              <input v-model="form.locationName" type="text" required class="input-field" />
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('storage.type') }} *</label>
               <select v-model="form.type" required class="input-field">
-                <option value="">Select...</option>
+                <option value="">{{ t('storage.selectType') }}</option>
                 <option value="DRIVE">Drive</option>
                 <option value="SERVER">Server</option>
                 <option value="CLOUD">Cloud</option>
@@ -78,9 +78,9 @@
             
             <div class="flex space-x-3 pt-4">
               <button type="submit" class="btn-primary flex-1">
-                {{ showEditModal ? 'Update' : 'Create' }}
+                {{ showEditModal ? t('common.save') : t('common.create') }}
               </button>
-              <button type="button" @click="closeModal" class="btn-secondary flex-1">Cancel</button>
+              <button type="button" @click="closeModal" class="btn-secondary flex-1">{{ t('common.cancel') }}</button>
             </div>
           </form>
         </div>
@@ -91,9 +91,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/authStore'
 import { storageAPI } from '../services/api'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const locations = ref([])

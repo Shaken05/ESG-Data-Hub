@@ -7,6 +7,9 @@ import departmentsRoutes from './routes/departmentsRoutes.js';
 import storageRoutes from './routes/storageRoutes.js';
 import metricLinksRoutes from './routes/metricLinksRoutes.js';
 import importRoutes from './routes/importRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
+import gapsRoutes from './routes/gapsRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 
@@ -29,6 +32,9 @@ app.use('/api/departments', authMiddleware, departmentsRoutes);
 app.use('/api/storage', authMiddleware, storageRoutes);
 app.use('/api/metric-links', authMiddleware, metricLinksRoutes);
 app.use('/api/import', authMiddleware, importRoutes);
+app.use('/api/export', authMiddleware, exportRoutes);
+app.use('/api/audit-logs', authMiddleware, auditRoutes);
+app.use('/api/gaps', authMiddleware, gapsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

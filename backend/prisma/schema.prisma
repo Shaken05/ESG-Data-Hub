@@ -31,7 +31,10 @@ model Metric {
   description String?
   category    String        // E, S, or G
   unit        String?
-  standard    String?       // GRI, STARS, SDG
+  standard    String?       // legacy single standard; use standards for multiple
+  standards   String?       // JSON array: ["GRI","STARS","SDG","SASB","TCFD"]
+  scope       String?       // for E: SCOPE_1, SCOPE_2, SCOPE_3
+  subcategory String?
   status      String        @default("PLANNED")
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -47,6 +50,8 @@ model DataSource {
   id              Int           @id @default(autoincrement())
   name            String
   type            String        // EXCEL, API, SURVEY, ERP
+  sourceKind      String?       // INTERNAL_REPORT, EXTERNAL_SUPPLIER, METER, SURVEY, ERP, MANUAL
+  systemOrFile    String?       // concrete system/file e.g. "Excel from energy dept", "1C"
   format          String?
   updateFrequency String?
   createdAt       DateTime      @default(now())
@@ -60,15 +65,19 @@ model DataSource {
 
 // Departments (responsible units)
 model Department {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique
-  owner       String?
-  email       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  owner          String?
+  dataSteward    String?       // responsible for data collection
+  email          String?
+  phone          String?
+  contactChannel String?       // Teams, Telegram, etc.
+  accessLevel    String?       // PUBLIC, INTERNAL, SENSITIVE
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   
   // Relations
-  metricLinks MetricLink[]
+  metricLinks    MetricLink[]
   
   @@map("departments")
 }
@@ -107,4 +116,19 @@ model MetricLink {
   storage      StorageLocation?  @relation(fields: [storageId], references: [id], onDelete: SetNull)
   
   @@map("metric_links")
+}
+
+// Audit log for tracking who changed what
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  userEmail  String?
+  entityType String   // metric, data_source, department, storage_location, metric_link
+  entityId   Int?
+  action     String   // CREATE, UPDATE, DELETE
+  oldValues  String?  // JSON
+  newValues  String?  // JSON
+  createdAt  DateTime @default(now())
+  
+  @@map("audit_logs")
 }
