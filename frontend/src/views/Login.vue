@@ -22,7 +22,7 @@
               v-model="loginForm.email"
               type="email"
               placeholder="your@email.com"
-              class="input w-full"
+              class="input-field"
               required
             />
           </div>
@@ -32,12 +32,12 @@
               v-model="loginForm.password"
               type="password"
               placeholder="••••••••"
-              class="input w-full"
+              class="input-field"
               required
             />
           </div>
 
-          <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+          <div class="bg-primary-50 border border-primary-200 rounded p-3 text-sm text-primary-800">
             <p class="font-medium mb-2">📋 Test Credentials:</p>
             <ul class="space-y-1">
               <li><strong>Admin:</strong> admin@university.edu / admin123</li>

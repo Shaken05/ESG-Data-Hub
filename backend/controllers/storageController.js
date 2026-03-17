@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAction } from './auditController.js';
 
 const prisma = new PrismaClient();
 
@@ -60,6 +61,9 @@ export const createStorageLocation = async (req, res) => {
       }
     });
     
+    // Log action
+    await logAction(req.user?.id, 'CREATE', 'STORAGE', location.id, { locationName, type });
+    
     res.status(201).json(location);
   } catch (error) {
     res.status(400).json({ error: 'Failed to create storage location', message: error.message });
@@ -80,6 +84,9 @@ export const updateStorageLocation = async (req, res) => {
       }
     });
     
+    // Log action
+    await logAction(req.user?.id, 'UPDATE', 'STORAGE', location.id, { locationName, type });
+    
     res.json(location);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update storage location', message: error.message });
@@ -91,9 +98,14 @@ export const deleteStorageLocation = async (req, res) => {
   try {
     const { id } = req.params;
     
+    const location = await prisma.storageLocation.findUnique({ where: { id: parseInt(id) } });
+    
     await prisma.storageLocation.delete({
       where: { id: parseInt(id) }
     });
+    
+    // Log action
+    await logAction(req.user?.id, 'DELETE', 'STORAGE', parseInt(id), { locationName: location?.locationName });
     
     res.json({ message: 'Storage location deleted successfully' });
   } catch (error) {

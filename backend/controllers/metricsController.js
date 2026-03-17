@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAction } from './auditController.js';
 
 const prisma = new PrismaClient();
 
@@ -74,18 +75,23 @@ export const createMetric = async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to create metrics' });
     }
     
-    const { name, description, category, unit, standard, status } = req.body;
+    const { name, description, category, subcategory, scope, definition, unit, status } = req.body;
     
     const metric = await prisma.metric.create({
       data: {
         name,
         description,
         category,
+        subcategory,
+        scope,
+        definition,
         unit,
-        standard,
         status: status || 'PLANNED'
       }
     });
+    
+    // Log action
+    await logAction(req.user.id, 'CREATE', 'METRIC', metric.id, { name, category });
     
     res.status(201).json(metric);
   } catch (error) {
@@ -102,7 +108,7 @@ export const updateMetric = async (req, res) => {
     }
     
     const { id } = req.params;
-    const { name, description, category, unit, standard, status } = req.body;
+    const { name, description, category, subcategory, scope, definition, unit, status } = req.body;
     
     const metric = await prisma.metric.update({
       where: { id: parseInt(id) },
@@ -110,11 +116,16 @@ export const updateMetric = async (req, res) => {
         name,
         description,
         category,
+        subcategory,
+        scope,
+        definition,
         unit,
-        standard,
         status
       }
     });
+    
+    // Log action
+    await logAction(req.user.id, 'UPDATE', 'METRIC', metric.id, { name, status });
     
     res.json(metric);
   } catch (error) {
@@ -132,9 +143,15 @@ export const deleteMetric = async (req, res) => {
     
     const { id } = req.params;
     
+    // Get metric name for logging
+    const metric = await prisma.metric.findUnique({ where: { id: parseInt(id) } });
+    
     await prisma.metric.delete({
       where: { id: parseInt(id) }
     });
+    
+    // Log action
+    await logAction(req.user.id, 'DELETE', 'METRIC', parseInt(id), { name: metric?.name });
     
     res.json({ message: 'Metric deleted successfully' });
   } catch (error) {

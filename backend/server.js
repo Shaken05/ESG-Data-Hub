@@ -8,6 +8,10 @@ import storageRoutes from './routes/storageRoutes.js';
 import metricLinksRoutes from './routes/metricLinksRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import standardsRoutes from './routes/standardsRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 
 dotenv.config();
@@ -29,6 +33,10 @@ app.use('/api/departments', authMiddleware, departmentsRoutes);
 app.use('/api/storage', authMiddleware, storageRoutes);
 app.use('/api/metric-links', authMiddleware, metricLinksRoutes);
 app.use('/api/import', authMiddleware, importRoutes);
+app.use('/api/standards', standardsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/export', exportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -10,117 +10,265 @@
 
     <template v-else>
       <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gray-900">Import Data from Google Drive</h1>
+        <h1 class="text-3xl font-bold text-gray-900">Import ESG Metrics</h1>
       </div>
 
-      <!-- Instructions Card -->
-      <div class="card bg-blue-50 border border-blue-200">
-        <h2 class="text-lg font-semibold text-blue-900 mb-2">📋 How to Import</h2>
-        <ol class="list-decimal list-inside space-y-2 text-sm text-blue-800">
-          <li>Open your Google Sheet with ESG data</li>
-          <li>Click <strong>File → Share → Publish to web</strong></li>
-          <li>Choose "Link" and "Entire Document" or specific sheet</li>
-          <li>Copy the URL and paste it below</li>
-          <li>Select data type and click Import</li>
-        </ol>
-      </div>
-
-      <!-- Import Form -->
+      <!-- Tabs Navigation -->
       <div class="card">
-        <h2 class="text-xl font-semibold mb-4">Import from Google Sheets</h2>
-        
-        <div class="space-y-4">
-          <!-- Data Type Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              What would you like to import?
-            </label>
-            <div class="flex gap-4">
-              <label class="flex items-center">
-                <input 
-                  type="radio" 
-                  v-model="importType" 
-                  value="metrics" 
-                  class="mr-2"
-                />
-                <span>📊 Metrics</span>
+        <div class="flex border-b border-gray-200 overflow-x-auto">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            class="px-6 py-3 font-medium border-b-2 transition whitespace-nowrap"
+            :class="activeTab === tab.id 
+              ? 'border-primary-600 text-primary-600' 
+              : 'border-transparent text-gray-600 hover:text-gray-900'"
+          >
+            {{ tab.icon }} {{ tab.title }}
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: Google Sheets Import -->
+      <div v-show="activeTab === 'sheets'" class="space-y-4">
+        <div class="card bg-primary-50 border border-primary-200">
+          <h2 class="text-lg font-semibold text-primary-900 mb-2">📋 How to Import from Google Sheets</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm text-primary-800">
+            <li>Open your Google Sheet with ESG data</li>
+            <li>Click <strong>File → Share → Publish to web</strong></li>
+            <li>Choose "Link" and "Entire Document" or specific sheet</li>
+            <li>Copy the URL and paste it below</li>
+            <li>Click Import</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">📊 Google Sheets URL</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Google Sheets URL
               </label>
-              <label class="flex items-center">
-                <input 
-                  type="radio" 
-                  v-model="importType" 
-                  value="sources" 
-                  class="mr-2"
-                />
-                <span>📁 Data Sources</span>
-              </label>
+              <input
+                v-model="sheetsUrl"
+                type="url"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                class="input-field"
+              />
             </div>
-          </div>
 
-          <!-- Google Sheets URL Input -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Google Sheets URL
-            </label>
-            <input
-              v-model="sheetsUrl"
-              type="url"
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              class="input w-full"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Make sure the sheet is published or shared publicly
-            </p>
-          </div>
-
-          <!-- Import Button -->
-          <div class="flex gap-3">
             <button
-              @click="handleImport"
-              :disabled="!sheetsUrl || !importType || loading"
-              class="btn-primary"
+              @click="handleImport('sheets')"
+              :disabled="!sheetsUrl || loading"
+              class="btn-primary disabled:opacity-50"
             >
-              {{ loading ? 'Importing...' : '📥 Import Data' }}
-            </button>
-            <button
-              @click="showTemplate"
-              class="btn-secondary"
-            >
-              📋 View Template
+              {{ loading === 'sheets' ? 'Importing...' : '📥 Import from Google Sheets' }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Template Info -->
-      <div v-if="templateVisible" class="card bg-gray-50">
-        <h3 class="text-lg font-semibold mb-3">Template Format</h3>
-        
-        <div v-if="importType === 'metrics'">
-          <p class="text-sm text-gray-600 mb-2">Your Google Sheet should have these columns:</p>
-          <div class="bg-white p-3 rounded border font-mono text-sm">
-            name | description | category | unit | standard | status
-          </div>
-          <div class="mt-3 text-sm">
-            <p class="font-medium">Valid values:</p>
-            <ul class="list-disc list-inside ml-2 text-gray-600">
-              <li><strong>category:</strong> E (Environmental), S (Social), G (Governance)</li>
-              <li><strong>standard:</strong> GRI, STARS, SDG (optional)</li>
-              <li><strong>status:</strong> COLLECTED, PARTIAL, PLANNED</li>
-            </ul>
+      <!-- TAB 2: CSV File Upload -->
+      <div v-show="activeTab === 'csv'" class="space-y-4">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">📄 Upload CSV File</h2>
+          <div class="space-y-4">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-400 transition cursor-pointer"
+              @click="$refs.csvInput.click()">
+              <p class="text-2xl">📁</p>
+              <p class="text-gray-700 font-medium">Click to upload CSV file or drag and drop</p>
+              <p class="text-gray-500 text-sm">Maximum 10MB</p>
+              <input
+                ref="csvInput"
+                @change="handleFileSelect"
+                type="file"
+                accept=".csv"
+                class="hidden"
+              />
+            </div>
+
+            <div v-if="selectedFile" class="flex items-center gap-3 p-3 bg-green-50 rounded border border-green-200">
+              <span class="text-2xl">✅</span>
+              <div class="flex-1">
+                <p class="font-medium text-green-900">{{ selectedFile.name }}</p>
+                <p class="text-sm text-green-700">{{ formatFileSize(selectedFile.size) }}</p>
+              </div>
+              <button
+                @click="selectedFile = null; $refs.csvInput.value = ''"
+                class="text-red-600 hover:text-red-900"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              @click="handleImport('csv')"
+              :disabled="!selectedFile || loading"
+              class="btn-primary w-full disabled:opacity-50"
+            >
+              {{ loading === 'csv' ? 'Uploading...' : '📤 Upload CSV' }}
+            </button>
           </div>
         </div>
+      </div>
 
-        <div v-if="importType === 'sources'">
-          <p class="text-sm text-gray-600 mb-2">Your Google Sheet should have these columns:</p>
-          <div class="bg-white p-3 rounded border font-mono text-sm">
-            name | type | format | update_frequency
+      <!-- TAB 3: Add Single Metric -->
+      <div v-show="activeTab === 'single'" class="space-y-4">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">➕ Add Single Metric</h2>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Metric Name *
+                </label>
+                <input
+                  v-model="singleMetric.name"
+                  type="text"
+                  placeholder="e.g., Energy Consumption"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select v-model="singleMetric.category" class="input-field">
+                  <option value="E">E - Environmental</option>
+                  <option value="S">S - Social</option>
+                  <option value="G">G - Governance</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                v-model="singleMetric.description"
+                placeholder="Brief description of this metric"
+                rows="3"
+                class="input-field"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  v-model="singleMetric.subcategory"
+                  type="text"
+                  placeholder="e.g., Energy"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Unit
+                </label>
+                <input
+                  v-model="singleMetric.unit"
+                  type="text"
+                  placeholder="e.g., kWh"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <select v-model="singleMetric.status" class="input-field">
+                  <option value="COLLECTED">✅ Collected</option>
+                  <option value="PARTIAL">⚠️ Partial</option>
+                  <option value="PLANNED">📋 Planned</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Definition
+              </label>
+              <textarea
+                v-model="singleMetric.definition"
+                placeholder="Detailed definition of the metric"
+                rows="2"
+                class="input-field"
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Standards (comma-separated)
+              </label>
+              <input
+                v-model="singleMetric.standards"
+                type="text"
+                placeholder="e.g., GRI, SASB, TCFD"
+                class="input-field"
+              />
+              <p class="text-xs text-gray-500 mt-1">Available: GRI, SASB, TCFD, SDG, STARS</p>
+            </div>
+
+            <button
+              @click="handleImport('single')"
+              :disabled="!singleMetric.name || loading"
+              class="btn-primary w-full disabled:opacity-50"
+            >
+              {{ loading === 'single' ? 'Adding...' : '➕ Add Metric' }}
+            </button>
           </div>
-          <div class="mt-3 text-sm">
-            <p class="font-medium">Valid values:</p>
-            <ul class="list-disc list-inside ml-2 text-gray-600">
-              <li><strong>type:</strong> EXCEL, API, SURVEY, ERP</li>
-            </ul>
+        </div>
+      </div>
+
+      <!-- TAB 4: Batch JSON Upload -->
+      <div v-show="activeTab === 'json'" class="space-y-4">
+        <div class="card bg-purple-50 border border-purple-200">
+          <h2 class="text-lg font-semibold text-purple-900 mb-2">📝 JSON Format</h2>
+          <pre class="bg-white p-3 rounded text-xs overflow-x-auto"><code>
+[
+  {
+    "name": "Energy Consumption",
+    "description": "Total electricity usage",
+    "category": "E",
+    "subcategory": "Energy",
+    "unit": "kWh",
+    "status": "COLLECTED",
+    "standards": "GRI,SASB"
+  },
+  {
+    "name": "Water Usage",
+    "category": "E",
+    "unit": "m³",
+    "status": "PARTIAL"
+  }
+]
+          </code></pre>
+        </div>
+
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">📋 Paste JSON Array</h2>
+          <div class="space-y-4">
+            <div>
+              <textarea
+                v-model="jsonInput"
+                placeholder="Paste your JSON array here..."
+                rows="10"
+                class="input-field font-mono"
+              ></textarea>
+            </div>
+
+            <button
+              @click="handleImport('json')"
+              :disabled="!jsonInput.trim() || loading"
+              class="btn-primary w-full disabled:opacity-50"
+            >
+              {{ loading === 'json' ? 'Importing...' : '📤 Import JSON' }}
+            </button>
           </div>
         </div>
       </div>
@@ -138,11 +286,20 @@
           <div v-if="importResult.errorDetails && importResult.errorDetails.length > 0" class="mt-3">
             <p class="font-medium">Errors:</p>
             <ul class="list-disc list-inside ml-2">
-              <li v-for="(error, index) in importResult.errorDetails" :key="index">
+              <li v-for="(error, index) in importResult.errorDetails.slice(0, 5)" :key="index">
                 {{ error.error }}
+              </li>
+              <li v-if="importResult.errorDetails.length > 5" class="font-medium">
+                ... and {{ importResult.errorDetails.length - 5 }} more errors
               </li>
             </ul>
           </div>
+          <button
+            @click="goToMetrics"
+            class="btn-primary mt-4 disabled:opacity-50"
+          >
+            ✅ View Metrics
+          </button>
         </div>
       </div>
 
@@ -162,46 +319,152 @@ import { useAuthStore } from '../stores/authStore';
 const authStore = useAuthStore();
 const API_URL = 'http://localhost:3000/api';
 
-const importType = ref('metrics');
-const sheetsUrl = ref('');
+const tabs = [
+  { id: 'sheets', title: 'Google Sheets', icon: '📊' },
+  { id: 'csv', title: 'CSV File', icon: '📄' },
+  { id: 'single', title: 'Single Metric', icon: '➕' },
+  { id: 'json', title: 'JSON Batch', icon: '📝' }
+];
+
+const activeTab = ref('sheets');
 const loading = ref(false);
-const templateVisible = ref(false);
+const sheetsUrl = ref('');
+const selectedFile = ref(null);
+const jsonInput = ref('');
 const importResult = ref(null);
 const errorMessage = ref('');
 
-const handleImport = async () => {
-  if (!sheetsUrl.value || !importType.value) return;
-  
-  loading.value = true;
-  errorMessage.value = '';
+const singleMetric = ref({
+  name: '',
+  description: '',
+  category: 'E',
+  subcategory: '',
+  unit: '',
+  definition: '',
+  standards: '',
+  status: 'PLANNED'
+});
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+};
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 10 * 1024 * 1024) {
+      errorMessage.value = 'File size must be less than 10MB';
+      return;
+    }
+    selectedFile.value = file;
+    errorMessage.value = '';
+  }
+};
+
+const handleImport = async (type) => {
   importResult.value = null;
-  
+  errorMessage.value = '';
+  loading.value = type;
+
   try {
-    const response = await axios.post(
-      `${API_URL}/import/${importType.value}`,
-      { url: sheetsUrl.value },
-      {
-        headers: {
-          Authorization: `Bearer ${authStore.token}`
-        }
+    let response;
+
+    if (type === 'sheets') {
+      if (!sheetsUrl.value) {
+        errorMessage.value = 'Please enter a Google Sheets URL';
+        loading.value = false;
+        return;
       }
-    );
-    
+      response = await axios.post(
+        `${API_URL}/import/metrics`,
+        { url: sheetsUrl.value },
+        { headers: { Authorization: `Bearer ${authStore.token}` } }
+      );
+    } else if (type === 'csv') {
+      if (!selectedFile.value) {
+        errorMessage.value = 'Please select a CSV file';
+        loading.value = false;
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', selectedFile.value);
+      response = await axios.post(
+        `${API_URL}/import/csv/metrics`,
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${authStore.token}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+    } else if (type === 'single') {
+      if (!singleMetric.value.name) {
+        errorMessage.value = 'Metric name is required';
+        loading.value = false;
+        return;
+      }
+      response = await axios.post(
+        `${API_URL}/import/single`,
+        singleMetric.value,
+        { headers: { Authorization: `Bearer ${authStore.token}` } }
+      );
+    } else if (type === 'json') {
+      if (!jsonInput.value.trim()) {
+        errorMessage.value = 'Please paste a JSON array';
+        loading.value = false;
+        return;
+      }
+      try {
+        const metrics = JSON.parse(jsonInput.value);
+        if (!Array.isArray(metrics)) {
+          errorMessage.value = 'JSON must be an array of metrics';
+          loading.value = false;
+          return;
+        }
+        response = await axios.post(
+          `${API_URL}/import/manual/metrics`,
+          { metrics },
+          { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+      } catch (e) {
+        errorMessage.value = 'Invalid JSON format: ' + e.message;
+        loading.value = false;
+        return;
+      }
+    }
+
     importResult.value = response.data;
     
+    // Reset form if successful
     if (response.data.success) {
-      setTimeout(() => {
-        window.location.href = '/metrics';
-      }, 2000);
+      if (type === 'sheets') sheetsUrl.value = '';
+      if (type === 'csv') {
+        selectedFile.value = null;
+        if (this.$refs?.csvInput) this.$refs.csvInput.value = '';
+      }
+      if (type === 'single') {
+        singleMetric.value = {
+          name: '', description: '', category: 'E',
+          subcategory: '', unit: '', definition: '', standards: '', status: 'PLANNED'
+        };
+      }
+      if (type === 'json') jsonInput.value = '';
     }
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to import data';
+    errorMessage.value = error.response?.data?.message || error.response?.data?.error || error.message;
   } finally {
     loading.value = false;
   }
 };
 
-const showTemplate = () => {
-  templateVisible.value = !templateVisible.value;
+const goToMetrics = () => {
+  window.location.href = '/metrics';
 };
 </script>
+
+

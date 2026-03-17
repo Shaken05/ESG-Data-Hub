@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAction } from './auditController.js';
 
 const prisma = new PrismaClient();
 
@@ -51,15 +52,21 @@ export const getDepartmentById = async (req, res) => {
 // Create new department
 export const createDepartment = async (req, res) => {
   try {
-    const { name, owner, email } = req.body;
+    const { name, owner, email, phone, messenger, roleInDepartment } = req.body;
     
     const department = await prisma.department.create({
       data: {
         name,
         owner,
-        email
+        email,
+        phone,
+        messenger,
+        roleInDepartment
       }
     });
+    
+    // Log action
+    await logAction(req.user?.id, 'CREATE', 'DEPARTMENT', department.id, { name, owner });
     
     res.status(201).json(department);
   } catch (error) {
@@ -71,16 +78,22 @@ export const createDepartment = async (req, res) => {
 export const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, owner, email } = req.body;
+    const { name, owner, email, phone, messenger, roleInDepartment } = req.body;
     
     const department = await prisma.department.update({
       where: { id: parseInt(id) },
       data: {
         name,
         owner,
-        email
+        email,
+        phone,
+        messenger,
+        roleInDepartment
       }
     });
+    
+    // Log action
+    await logAction(req.user?.id, 'UPDATE', 'DEPARTMENT', department.id, { name, owner });
     
     res.json(department);
   } catch (error) {
@@ -93,9 +106,14 @@ export const deleteDepartment = async (req, res) => {
   try {
     const { id } = req.params;
     
+    const department = await prisma.department.findUnique({ where: { id: parseInt(id) } });
+    
     await prisma.department.delete({
       where: { id: parseInt(id) }
     });
+    
+    // Log action
+    await logAction(req.user?.id, 'DELETE', 'DEPARTMENT', parseInt(id), { name: department?.name });
     
     res.json({ message: 'Department deleted successfully' });
   } catch (error) {

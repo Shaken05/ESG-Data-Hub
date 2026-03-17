@@ -21,23 +21,29 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
+  // Relations
+  auditLogs AuditLog[]
+  
   @@map("users")
 }
 
 // ESG Metrics catalog
 model Metric {
-  id          Int           @id @default(autoincrement())
-  name        String
-  description String?
-  category    String        // E, S, or G
-  unit        String?
-  standard    String?       // GRI, STARS, SDG
-  status      String        @default("PLANNED")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            Int               @id @default(autoincrement())
+  name          String
+  description   String?
+  category      String            // E, S, or G
+  subcategory   String?           // e.g., Energy, Waste, Water for E
+  scope         String?           // Scope 1, 2, 3 for Energy
+  definition    String?           // formal definition
+  unit          String?
+  status        String            @default("PLANNED") // PLANNED, IN_PROGRESS, COLLECTED, PARTIAL, NOT_COLLECTED
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   
   // Relations
-  metricLinks MetricLink[]
+  metricLinks   MetricLink[]
+  standards     MetricStandard[]
   
   @@map("metrics")
 }
@@ -46,9 +52,9 @@ model Metric {
 model DataSource {
   id              Int           @id @default(autoincrement())
   name            String
-  type            String        // EXCEL, API, SURVEY, ERP
+  type            String        // EXCEL, API, SURVEY, ERP, MANUAL
   format          String?
-  updateFrequency String?
+  updateFrequency String?       // MONTHLY, QUARTERLY, ANNUALLY, ONE_TIME
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   
@@ -58,17 +64,49 @@ model DataSource {
   @@map("data_sources")
 }
 
-// Departments (responsible units)
-model Department {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique
-  owner       String?
-  email       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+// ESG Standards (GRI, SASB, TCFD, SDG, STARS, etc.)
+model Standard {
+  id        Int                @id @default(autoincrement())
+  name      String             @unique  // GRI, SASB, TCFD, SDG, STARS
+  code      String?            // e.g., GRI 305-1
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
   
   // Relations
-  metricLinks MetricLink[]
+  metrics   MetricStandard[]
+  
+  @@map("standards")
+}
+
+// Junction table: Metric -> Standard (many-to-many)
+model MetricStandard {
+  id        Int       @id @default(autoincrement())
+  metricId  Int
+  standardId Int
+  createdAt DateTime  @default(now())
+  
+  // Relations
+  metric    Metric    @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  standard  Standard  @relation(fields: [standardId], references: [id], onDelete: Cascade)
+  
+  @@unique([metricId, standardId])
+  @@map("metric_standards")
+}
+
+// Departments (responsible units)
+model Department {
+  id                    Int           @id @default(autoincrement())
+  name                  String        @unique
+  owner                 String?       // data owner person
+  email                 String?
+  phone                 String?
+  messenger             String?       // Teams, Telegram handle
+  roleInDepartment      String?       // e.g., "Data Steward", "ESG Coordinator"
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  // Relations
+  metricLinks           MetricLink[]
   
   @@map("departments")
 }
@@ -89,22 +127,47 @@ model StorageLocation {
 
 // Link table connecting metrics, sources, departments, and storage
 model MetricLink {
-  id           Int               @id @default(autoincrement())
-  metricId     Int
-  sourceId     Int?
-  departmentId Int?
-  storageId    Int?
-  qualityScore Int?              // 0-100
-  lastUpdate   DateTime?
-  issues       String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id              Int               @id @default(autoincrement())
+  metricId        Int
+  sourceId        Int?
+  departmentId    Int?
+  storageId       Int?
+  
+  // Quality metrics (0-100)
+  qualityScore    Int?              // Overall quality
+  completeness    Int?              // Data completeness
+  accuracy        Int?              // Data accuracy
+  timeliness      Int?              // Data timeliness
+  
+  // Status and issues
+  lastUpdate      DateTime?
+  issues          String?           // Text description of issues
+  issueType       String?           // MISSING, DUPLICATE, NO_AUTOMATION, QUALITY_LOW, OTHER
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   
   // Relations
-  metric       Metric            @relation(fields: [metricId], references: [id], onDelete: Cascade)
-  source       DataSource?       @relation(fields: [sourceId], references: [id], onDelete: SetNull)
-  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  storage      StorageLocation?  @relation(fields: [storageId], references: [id], onDelete: SetNull)
+  metric          Metric            @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  source          DataSource?       @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  department      Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  storage         StorageLocation?  @relation(fields: [storageId], references: [id], onDelete: SetNull)
   
   @@map("metric_links")
+}
+
+// Audit Log for tracking changes
+model AuditLog {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  action    String    // CREATE, UPDATE, DELETE, EXPORT
+  entity    String    // METRIC, SOURCE, DEPARTMENT, STORAGE, METRIC_LINK, USER
+  entityId  Int?      // ID of affected entity
+  details   String?   // JSON with what changed
+  createdAt DateTime  @default(now())
+  
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("audit_logs")
 }

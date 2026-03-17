@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAction } from './auditController.js';
 
 const prisma = new PrismaClient();
 
@@ -62,6 +63,9 @@ export const createDataSource = async (req, res) => {
       }
     });
     
+    // Log action
+    await logAction(req.user?.id, 'CREATE', 'SOURCE', source.id, { name, type });
+    
     res.status(201).json(source);
   } catch (error) {
     res.status(400).json({ error: 'Failed to create data source', message: error.message });
@@ -84,6 +88,9 @@ export const updateDataSource = async (req, res) => {
       }
     });
     
+    // Log action
+    await logAction(req.user?.id, 'UPDATE', 'SOURCE', source.id, { name, type });
+    
     res.json(source);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update data source', message: error.message });
@@ -95,9 +102,14 @@ export const deleteDataSource = async (req, res) => {
   try {
     const { id } = req.params;
     
+    const source = await prisma.dataSource.findUnique({ where: { id: parseInt(id) } });
+    
     await prisma.dataSource.delete({
       where: { id: parseInt(id) }
     });
+    
+    // Log action
+    await logAction(req.user?.id, 'DELETE', 'SOURCE', parseInt(id), { name: source?.name });
     
     res.json({ message: 'Data source deleted successfully' });
   } catch (error) {
