@@ -8,6 +8,11 @@ import Departments from '../views/Departments.vue'
 import StorageLocations from '../views/StorageLocations.vue'
 import ImportData from '../views/ImportData.vue'
 import Login from '../views/Login.vue'
+import About from '../views/About.vue'
+import Glossary from '../views/Glossary.vue'
+import Methodology from '../views/Methodology.vue'
+import Gaps from '../views/Gaps.vue'
+import AuditLog from '../views/AuditLog.vue'
 
 const routes = [
   {
@@ -57,6 +62,36 @@ const routes = [
     name: 'ImportData',
     component: ImportData,
     meta: { requiresAuth: true, requiredRole: 'editor' }
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/glossary',
+    name: 'Glossary',
+    component: Glossary,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/methodology',
+    name: 'Methodology',
+    component: Methodology,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/gaps',
+    name: 'Gaps',
+    component: Gaps,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/audit-log',
+    name: 'AuditLog',
+    component: AuditLog,
+    meta: { requiresAuth: true, requiredRole: 'admin' }
   }
 ]
 

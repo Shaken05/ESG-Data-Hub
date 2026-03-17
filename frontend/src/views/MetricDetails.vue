@@ -5,17 +5,17 @@
       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
-      Back
+      {{ t('metricDetails.back') }}
     </button>
     
     <!-- Loading State -->
     <div v-if="loading" class="text-center py-12">
-      <p class="text-gray-500">Loading metric details...</p>
+      <p class="text-gray-500">{{ t('metricDetails.loading') }}</p>
     </div>
     
     <!-- Error State -->
     <div v-else-if="error" class="card bg-red-50 text-red-800">
-      <p>Error loading metric: {{ error }}</p>
+      <p>{{ t('metricDetails.error') }} {{ error }}</p>
     </div>
     
     <!-- Metric Details -->
@@ -36,25 +36,33 @@
             <p v-if="metric.description" class="text-gray-600">{{ metric.description }}</p>
           </div>
           <button v-if="authStore.isEditor" @click="showEditModal = true" class="btn-secondary">
-            Edit
+            {{ t('metricDetails.edit') }}
           </button>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div v-if="metric.scope">
+            <p class="text-sm text-gray-500">Scope</p>
+            <p class="text-lg font-medium">{{ metric.scope }}</p>
+          </div>
+          <div v-if="metric.subcategory">
+            <p class="text-sm text-gray-500">{{ t('metricsList.subcategory') }}</p>
+            <p class="text-lg font-medium">{{ metric.subcategory }}</p>
+          </div>
           <div v-if="metric.unit">
-            <p class="text-sm text-gray-500">Unit of Measurement</p>
+            <p class="text-sm text-gray-500">{{ t('metricDetails.unitOfMeasurement') }}</p>
             <p class="text-lg font-medium">{{ metric.unit }}</p>
           </div>
-          <div v-if="metric.standard">
-            <p class="text-sm text-gray-500">Standard</p>
-            <p class="text-lg font-medium">{{ metric.standard }}</p>
+          <div v-if="metric.standard || displayStandards.length">
+            <p class="text-sm text-gray-500">{{ t('metricDetails.standard') }}</p>
+            <p class="text-lg font-medium">{{ displayStandards.length ? displayStandards.join(', ') : metric.standard }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">Created</p>
+            <p class="text-sm text-gray-500">{{ t('metricDetails.created') }}</p>
             <p class="text-lg font-medium">{{ formatDate(metric.createdAt) }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">Last Updated</p>
+            <p class="text-sm text-gray-500">{{ t('metricDetails.lastUpdated') }}</p>
             <p class="text-lg font-medium">{{ formatDate(metric.updatedAt) }}</p>
           </div>
         </div>
@@ -62,7 +70,7 @@
       
       <!-- Metric Links -->
       <div v-if="metric.metricLinks && metric.metricLinks.length > 0" class="space-y-4">
-        <h2 class="text-2xl font-bold">Data Sources & Storage</h2>
+        <h2 class="text-2xl font-bold">{{ t('metricDetails.dataSourcesStorage') }}</h2>
         
         <div v-for="link in metric.metricLinks" :key="link.id" class="card">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -72,23 +80,23 @@
                 <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                Data Source
+                {{ t('metricDetails.dataSource') }}
               </h3>
               <div class="space-y-2">
                 <div>
-                  <p class="text-sm text-gray-500">Name</p>
+                  <p class="text-sm text-gray-500">{{ t('common.name') }}</p>
                   <p class="font-medium">{{ link.source.name }}</p>
                 </div>
                 <div>
-                  <p class="text-sm text-gray-500">Type</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.type') }}</p>
                   <p class="font-medium">{{ link.source.type }}</p>
                 </div>
                 <div v-if="link.source.format">
-                  <p class="text-sm text-gray-500">Format</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.format') }}</p>
                   <p class="font-medium">{{ link.source.format }}</p>
                 </div>
                 <div v-if="link.source.updateFrequency">
-                  <p class="text-sm text-gray-500">Update Frequency</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.updateFrequency') }}</p>
                   <p class="font-medium">{{ link.source.updateFrequency }}</p>
                 </div>
               </div>
@@ -100,19 +108,19 @@
                 <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                 </svg>
-                Responsible Department
+                {{ t('metricDetails.responsibleDepartment') }}
               </h3>
               <div class="space-y-2">
                 <div>
-                  <p class="text-sm text-gray-500">Department</p>
+                  <p class="text-sm text-gray-500">{{ t('nav.departments') }}</p>
                   <p class="font-medium">{{ link.department.name }}</p>
                 </div>
                 <div v-if="link.department.owner">
-                  <p class="text-sm text-gray-500">Owner</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.owner') }}</p>
                   <p class="font-medium">{{ link.department.owner }}</p>
                 </div>
                 <div v-if="link.department.email">
-                  <p class="text-sm text-gray-500">Contact</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.contact') }}</p>
                   <p class="font-medium">{{ link.department.email }}</p>
                 </div>
               </div>
@@ -124,15 +132,15 @@
                 <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
                 </svg>
-                Storage Location
+                {{ t('metricDetails.storageLocation') }}
               </h3>
               <div class="space-y-2">
                 <div>
-                  <p class="text-sm text-gray-500">Location</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.location') }}</p>
                   <p class="font-medium">{{ link.storage.locationName }}</p>
                 </div>
                 <div>
-                  <p class="text-sm text-gray-500">Type</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.type') }}</p>
                   <p class="font-medium">{{ link.storage.type }}</p>
                 </div>
               </div>
@@ -144,19 +152,19 @@
                 <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                Quality & Status
+                {{ t('metricDetails.qualityStatus') }}
               </h3>
               <div class="space-y-2">
                 <div v-if="link.qualityScore !== null">
-                  <p class="text-sm text-gray-500">Quality Score</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.qualityScore') }}</p>
                   <p class="font-medium">{{ link.qualityScore }}/100</p>
                 </div>
                 <div v-if="link.lastUpdate">
-                  <p class="text-sm text-gray-500">Last Update</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.lastUpdate') }}</p>
                   <p class="font-medium">{{ formatDate(link.lastUpdate) }}</p>
                 </div>
                 <div v-if="link.issues">
-                  <p class="text-sm text-gray-500">Issues</p>
+                  <p class="text-sm text-gray-500">{{ t('metricDetails.issues') }}</p>
                   <p class="font-medium text-red-600">{{ link.issues }}</p>
                 </div>
               </div>
@@ -167,7 +175,7 @@
       
       <!-- No Links -->
       <div v-else class="card text-center py-8 text-gray-500">
-        <p>No data sources or storage locations linked to this metric yet.</p>
+        <p>{{ t('metricDetails.noLinks') }}</p>
       </div>
     </div>
     
@@ -176,7 +184,7 @@
       <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold">Edit Metric</h2>
+            <h2 class="text-2xl font-bold">{{ t('metricDetails.updateMetric') }}</h2>
             <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -186,55 +194,70 @@
           
           <form @submit.prevent="handleUpdate" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('common.name') }} *</label>
               <input v-model="editForm.name" type="text" required class="input-field" />
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('common.description') }}</label>
               <textarea v-model="editForm.description" rows="3" class="input-field"></textarea>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('common.category') }} *</label>
                 <select v-model="editForm.category" required class="input-field">
-                  <option value="E">Environmental (E)</option>
-                  <option value="S">Social (S)</option>
-                  <option value="G">Governance (G)</option>
+                  <option value="E">{{ t('common.environmental') }}</option>
+                  <option value="S">{{ t('common.social') }}</option>
+                  <option value="G">{{ t('common.governance') }}</option>
                 </select>
               </div>
               
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('common.status') }} *</label>
                 <select v-model="editForm.status" required class="input-field">
-                  <option value="PLANNED">Planned</option>
-                  <option value="PARTIAL">Partial</option>
-                  <option value="COLLECTED">Collected</option>
+                  <option value="PLANNED">{{ t('common.planned') }}</option>
+                  <option value="PARTIAL">{{ t('common.partial') }}</option>
+                  <option value="COLLECTED">{{ t('common.collected') }}</option>
                 </select>
               </div>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
+              <div v-if="editForm.category === 'E'">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('metricsList.scope') }}</label>
+                <select v-model="editForm.scope" class="input-field">
+                  <option value="">—</option>
+                  <option value="SCOPE_1">{{ t('metricsList.scope1') }}</option>
+                  <option value="SCOPE_2">{{ t('metricsList.scope2') }}</option>
+                  <option value="SCOPE_3">{{ t('metricsList.scope3') }}</option>
+                </select>
+              </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('metricsList.subcategory') }}</label>
+                <input v-model="editForm.subcategory" type="text" class="input-field" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('common.unit') }}</label>
                 <input v-model="editForm.unit" type="text" class="input-field" />
               </div>
-              
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Standard</label>
-                <select v-model="editForm.standard" class="input-field">
-                  <option value="">Select...</option>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('metricsList.standards') }}</label>
+                <select v-model="editForm.standards" multiple class="input-field min-h-[80px]">
                   <option value="GRI">GRI</option>
-                  <option value="STARS">STARS</option>
+                  <option value="SASB">SASB</option>
+                  <option value="TCFD">TCFD</option>
                   <option value="SDG">SDG</option>
+                  <option value="STARS">STARS</option>
                 </select>
               </div>
             </div>
             
             <div class="flex space-x-3 pt-4">
-              <button type="submit" class="btn-primary flex-1">Update Metric</button>
-              <button type="button" @click="showEditModal = false" class="btn-secondary flex-1">Cancel</button>
+              <button type="submit" class="btn-primary flex-1">{{ t('metricDetails.updateMetric') }}</button>
+              <button type="button" @click="showEditModal = false" class="btn-secondary flex-1">{{ t('common.cancel') }}</button>
             </div>
           </form>
         </div>
@@ -245,10 +268,12 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useMetricsStore } from '../stores/metricsStore'
 import { useAuthStore } from '../stores/authStore'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const metricsStore = useMetricsStore()
@@ -265,22 +290,43 @@ onMounted(async () => {
   try {
     await metricsStore.fetchMetricById(route.params.id)
     if (metric.value) {
-      editForm.value = { ...metric.value }
+      const m = metric.value
+      const standards = typeof m.standards === 'string'
+        ? (() => { try { return JSON.parse(m.standards) } catch { return [] } })()
+        : (m.standards || [])
+      editForm.value = { ...m, standards }
     }
   } catch (err) {
     // Error will be shown via computed error property
   }
 })
 
+const displayStandards = computed(() => {
+  const m = metric.value
+  if (!m) return []
+  if (Array.isArray(m.standards)) return m.standards
+  if (typeof m.standards === 'string') {
+    try { return JSON.parse(m.standards) }
+    catch { return m.standards ? [m.standards] : [] }
+  }
+  return []
+})
+
 watch(metric, (newMetric) => {
   if (newMetric) {
-    editForm.value = { ...newMetric }
+    const standards = typeof newMetric.standards === 'string'
+      ? (() => { try { return JSON.parse(newMetric.standards) } catch { return [] } })()
+      : (newMetric.standards || [])
+    editForm.value = { ...newMetric, standards }
   }
 })
 
 async function handleUpdate() {
   try {
-    await metricsStore.updateMetric(metric.value.id, editForm.value)
+    const payload = { ...editForm.value }
+    if (payload.standards && payload.standards.length) payload.standards = payload.standards
+    else payload.standards = []
+    await metricsStore.updateMetric(metric.value.id, payload)
     showEditModal.value = false
   } catch (err) {
     alert('Error updating metric: ' + err.message)

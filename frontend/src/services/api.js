@@ -71,4 +71,53 @@ export const metricLinksAPI = {
   delete: (id) => api.delete(`/metric-links/${id}`)
 }
 
+// Gaps (heatmap) API
+export const gapsAPI = {
+  getGaps: (params) => api.get('/gaps', { params })
+}
+
+// Audit log API (admin only)
+export const auditLogsAPI = {
+  getLogs: (params) => api.get('/audit-logs', { params })
+}
+
+// Export API - returns blob for file download
+function getExportFilename(disposition) {
+  const match = disposition && disposition.match(/filename="?([^";\n]+)"?/)
+  return match ? match[1].trim() : 'export'
+}
+
+export const exportAPI = {
+  // Metrics: params = { category?, status?, search? }
+  async downloadMetrics(format, params = {}) {
+    const qs = new URLSearchParams()
+    if (params.category) qs.set('category', params.category)
+    if (params.status) qs.set('status', params.status)
+    if (params.search && params.search.trim()) qs.set('search', params.search.trim())
+    const suffix = qs.toString() ? '?' + qs.toString() : ''
+    const res = await api.get(`/export/metrics.${format}${suffix}`, { responseType: 'blob' })
+    const name = getExportFilename(res.headers['content-disposition']) || `esg-metrics-export.${format}`
+    triggerDownload(res.data, name)
+  },
+  async downloadSources(format) {
+    const res = await api.get(`/export/sources.${format}`, { responseType: 'blob' })
+    const name = getExportFilename(res.headers['content-disposition']) || `esg-sources-export.${format}`
+    triggerDownload(res.data, name)
+  },
+  async downloadDepartments(format) {
+    const res = await api.get(`/export/departments.${format}`, { responseType: 'blob' })
+    const name = getExportFilename(res.headers['content-disposition']) || `esg-departments-export.${format}`
+    triggerDownload(res.data, name)
+  }
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default api

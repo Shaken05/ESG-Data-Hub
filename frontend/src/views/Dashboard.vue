@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-gray-900">ESG Data Inventory</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{{ t('dashboard.title') }}</h1>
     </div>
     
     <!-- Stats Cards -->
@@ -9,7 +9,7 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-600 mb-1">Total Metrics</p>
+            <p class="text-sm text-gray-600 mb-1">{{ t('dashboard.totalMetrics') }}</p>
             <p class="text-3xl font-bold text-gray-900">{{ stats.total }}</p>
           </div>
           <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -23,7 +23,7 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-600 mb-1">Environmental</p>
+            <p class="text-sm text-gray-600 mb-1">{{ t('dashboard.environmental') }}</p>
             <p class="text-3xl font-bold text-green-600">{{ getCategoryCount('E') }}</p>
           </div>
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -35,7 +35,7 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-600 mb-1">Social</p>
+            <p class="text-sm text-gray-600 mb-1">{{ t('dashboard.social') }}</p>
             <p class="text-3xl font-bold text-blue-600">{{ getCategoryCount('S') }}</p>
           </div>
           <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -47,7 +47,7 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-600 mb-1">Governance</p>
+            <p class="text-sm text-gray-600 mb-1">{{ t('dashboard.governance') }}</p>
             <p class="text-3xl font-bold text-purple-600">{{ getCategoryCount('G') }}</p>
           </div>
           <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -59,26 +59,26 @@
     
     <!-- Status Overview -->
     <div class="card">
-      <h2 class="text-xl font-semibold mb-4">Data Collection Status</h2>
+      <h2 class="text-xl font-semibold mb-4">{{ t('dashboard.dataCollectionStatus') }}</h2>
       <div v-if="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="flex items-center space-x-3">
           <div class="w-3 h-3 bg-green-500 rounded-full"></div>
           <div>
-            <p class="text-sm text-gray-600">Collected</p>
+            <p class="text-sm text-gray-600">{{ t('common.collected') }}</p>
             <p class="text-2xl font-semibold">{{ getStatusCount('COLLECTED') }}</p>
           </div>
         </div>
         <div class="flex items-center space-x-3">
           <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
           <div>
-            <p class="text-sm text-gray-600">Partial</p>
+            <p class="text-sm text-gray-600">{{ t('common.partial') }}</p>
             <p class="text-2xl font-semibold">{{ getStatusCount('PARTIAL') }}</p>
           </div>
         </div>
         <div class="flex items-center space-x-3">
           <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
           <div>
-            <p class="text-sm text-gray-600">Planned</p>
+            <p class="text-sm text-gray-600">{{ t('common.planned') }}</p>
             <p class="text-2xl font-semibold">{{ getStatusCount('PLANNED') }}</p>
           </div>
         </div>
@@ -88,14 +88,14 @@
     <!-- Recent Metrics -->
     <div class="card">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold">Recent Metrics</h2>
+        <h2 class="text-xl font-semibold">{{ t('dashboard.recentMetrics') }}</h2>
         <RouterLink to="/metrics" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
-          View All →
+          {{ t('dashboard.viewAll') }}
         </RouterLink>
       </div>
       
       <div v-if="loading" class="text-center py-8">
-        <p class="text-gray-500">Loading...</p>
+        <p class="text-gray-500">{{ t('common.loading') }}</p>
       </div>
       
       <div v-else-if="recentMetrics.length > 0" class="space-y-3">
@@ -118,7 +118,7 @@
       </div>
       
       <div v-else class="text-center py-8 text-gray-500">
-        No metrics found
+        {{ t('dashboard.noMetrics') }}
       </div>
     </div>
   </div>
@@ -126,9 +126,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 import { useMetricsStore } from '../stores/metricsStore'
 
+const { t } = useI18n()
 const router = useRouter()
 const metricsStore = useMetricsStore()
 
