@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: esg-postgres
+    environment:
+      POSTGRES_DB: esg_inventory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d esg_inventory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -6,13 +23,15 @@ services:
     working_dir: /app
     environment:
       NODE_ENV: production
-      # Для SQLite достаточно файловой БД внутри контейнера
-      DATABASE_URL: "file:./prisma/dev.db"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/esg_inventory?schema=public"
       PORT: "3000"
     ports:
       - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: >
-      sh -c "npx prisma migrate deploy && node prisma/seedUsers.js && node prisma/seedStandards.js && node prisma/seed.js && node server.js"
+      sh -c "npx prisma db push && node prisma/bootstrapSeed.js && node server.js"
 
   frontend:
     build:
@@ -28,4 +47,7 @@ services:
       - backend
     command: >
       sh -c "npm run dev -- --host 0.0.0.0 --port 5173"
+
+volumes:
+  postgres_data:
 

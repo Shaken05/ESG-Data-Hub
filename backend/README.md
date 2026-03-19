@@ -56,6 +56,19 @@ npm run dev
 
 Server will run on http://localhost:3000
 
+## Docker (PostgreSQL)
+
+From repository root you can run backend + frontend + PostgreSQL together:
+
+```bash
+docker compose up --build
+```
+
+For backend startup in Docker:
+- Prisma syncs schema to PostgreSQL via `prisma db push`
+- initial seed is executed only for an empty DB (first start)
+- API starts on `http://localhost:3000`
+
 ## API Endpoints
 
 ### Metrics
