@@ -78,7 +78,7 @@ export const gapsAPI = {
 
 // Audit log API (admin only)
 export const auditLogsAPI = {
-  getLogs: (params) => api.get('/audit-logs', { params })
+  getLogs: (params) => api.get('/audit', { params })
 }
 
 // Export API - returns blob for file download
