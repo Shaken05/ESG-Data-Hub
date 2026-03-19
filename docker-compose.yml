@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: esg-backend
+    working_dir: /app
+    environment:
+      NODE_ENV: production
+      # Для SQLite достаточно файловой БД внутри контейнера
+      DATABASE_URL: "file:./prisma/dev.db"
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npx prisma migrate deploy && node prisma/seedUsers.js && node prisma/seedStandards.js && node prisma/seed.js && node server.js"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: esg-frontend
+    working_dir: /app
+    environment:
+      # Фронт ходит к API из браузера, поэтому host = localhost
+      VITE_API_BASE_URL: "http://localhost:3000/api"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    command: >
+      sh -c "npm run dev -- --host 0.0.0.0 --port 5173"
+

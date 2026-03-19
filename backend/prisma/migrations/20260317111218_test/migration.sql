@@ -6,7 +6,6 @@
 */
 -- AlterTable
 ALTER TABLE "departments" ADD COLUMN "messenger" TEXT;
-ALTER TABLE "departments" ADD COLUMN "phone" TEXT;
 ALTER TABLE "departments" ADD COLUMN "roleInDepartment" TEXT;
 
 -- AlterTable
@@ -33,6 +32,9 @@ CREATE TABLE "metric_standards" (
     CONSTRAINT "metric_standards_metricId_fkey" FOREIGN KEY ("metricId") REFERENCES "metrics" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "metric_standards_standardId_fkey" FOREIGN KEY ("standardId") REFERENCES "standards" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+-- CreateTable
+DROP TABLE IF EXISTS "audit_logs";
 
 -- CreateTable
 CREATE TABLE "audit_logs" (

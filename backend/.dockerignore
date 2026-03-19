@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+Dockerfile*
+.dockerignore
+.git
+.gitignore
+
+# Локальная dev-база (для хоста, в контейнере своя)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal
+prisma/prisma/*.db
+prisma/prisma/*.db-journal
+

@@ -40,6 +40,20 @@ npm run dev
 
 The application will be available at http://localhost:5173
 
+## Docker
+
+The frontend can also be started via Docker together with the backend:
+
+```bash
+# From project root
+docker-compose up --build
+```
+
+This will:
+- build frontend image from `frontend/Dockerfile`
+- start Vite dev server inside container on port 5173
+- expose it at http://localhost:5173
+
 3. Build for production:
 ```bash
 npm run build
