@@ -79,16 +79,26 @@ describe('authController core utilities', () => {
     expect(await authController.verifyEmailDomain('user@kbtu.kz')).toBe(false);
   });
 
-  test('verifyEmailMailbox should be false when SMTP verification rejects', async () => {
-    process.env.VERIFY_EMAIL_SMTP = 'true';
-    dns.resolveMx.mockResolvedValue([{ exchange: 'mx1.kbtu.kz', priority: 10 }]);
-    const spy = jest.spyOn(authController, 'verifySmtpRecipient').mockResolvedValue(false);
+  test('verifyEmailMailbox should return false for invalid domain', async () => {
+    process.env.SKIP_EMAIL_SMTP_CHECK = 'true';
+    dns.resolveMx.mockRejectedValue(new Error('no mx'));
+    dns.resolve4.mockRejectedValue(new Error('no a'));
+    dns.resolve6.mockRejectedValue(new Error('no aaaa'));
 
     const res = await authController.verifyEmailMailbox('invalid@kbtu.kz');
     expect(res).toBe(false);
 
-    spy.mockRestore();
-    process.env.VERIFY_EMAIL_SMTP = 'false';
+    process.env.SKIP_EMAIL_SMTP_CHECK = 'false';
+  });
+
+  test('verifyEmailMailbox should return true when domain exists with SMTP skipped', async () => {
+    process.env.SKIP_EMAIL_SMTP_CHECK = 'true';
+    dns.resolveMx.mockResolvedValue([{ exchange: 'mx1.kbtu.kz', priority: 10 }]);
+
+    const res = await authController.verifyEmailMailbox('valid@kbtu.kz');
+    expect(res).toBe(true);
+
+    process.env.SKIP_EMAIL_SMTP_CHECK = 'false';
   });
 });
 

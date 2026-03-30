@@ -123,7 +123,8 @@ export const verifyEmailMailbox = async (email) => {
     return true;
   }
 
-  if (process.env.VERIFY_EMAIL_SMTP === 'true') {
+  const smtpCheck = process.env.VERIFY_EMAIL_SMTP !== 'false';
+  if (smtpCheck) {
     return await verifySmtpRecipient(email);
   }
 
@@ -162,9 +163,9 @@ export const registerPublic = async (req, res) => {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' });
     }
 
-    const domainExists = await verifyEmailDomain(email);
-    if (!domainExists) {
-      return res.status(400).json({ error: 'Email domain does not exist' });
+    const mailboxOk = await verifyEmailMailbox(email);
+    if (!mailboxOk) {
+      return res.status(400).json({ error: 'Email address does not exist' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -418,9 +419,8 @@ export const checkEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email address does not exist' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } })
-
-    return res.json({ valid: true, available: !existingUser })
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    return res.json({ valid: true, available: !existingUser });
   } catch (error) {
     return res.status(500).json({ error: 'Email validation failed', message: error.message })
   }
