@@ -1,29 +1,69 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import dns from 'dns/promises';
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRY = '7d';
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const isValidEmail = (email) => emailRegex.test(email)
-const isKbtuEmail = (email) => /@kbtu\.kz$/i.test(email)
+export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const isValidEmail = (email) => emailRegex.test(email)
+export const isKbtuEmail = (email) => /@kbtu\.kz$/i.test(email)
+
+export const verifyEmailDomain = async (email) => {
+  if (!isValidEmail(email)) return false;
+
+  if (process.env.SKIP_EMAIL_DOMAIN_CHECK === 'true') {
+    return true;
+  }
+
+  const domain = email.split('@')[1].toLowerCase();
+
+  try {
+    const mx = await dns.resolveMx(domain);
+    if (mx && mx.length > 0) {
+      return true;
+    }
+  } catch (_) {
+    // ignore and fallback
+  }
+
+  try {
+    const a = await dns.resolve4(domain);
+    if (a && a.length > 0) {
+      return true;
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  try {
+    const aaaa = await dns.resolve6(domain);
+    if (aaaa && aaaa.length > 0) {
+      return true;
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  return false;
+};
 
 // Hash password
-const hashPassword = async (password) => {
+export const hashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
   return bcrypt.hash(password, salt);
 };
 
 // Compare password
-const comparePassword = async (password, hashedPassword) => {
+export const comparePassword = async (password, hashedPassword) => {
   return bcrypt.compare(password, hashedPassword);
 };
 
 // Generate JWT token
-const generateToken = (userId) => {
+export const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 };
 // Public registration (kbtu.kz only)
@@ -41,6 +81,11 @@ export const registerPublic = async (req, res) => {
 
     if (!isKbtuEmail(email)) {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' });
+    }
+
+    const domainExists = await verifyEmailDomain(email);
+    if (!domainExists) {
+      return res.status(400).json({ error: 'Email domain does not exist' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -81,6 +126,11 @@ export const createUser = async (req, res) => {
 
     if (!isValidEmail(email) || !isKbtuEmail(email)) {
       return res.status(400).json({ error: 'Email must be a valid @kbtu.kz address' });
+    }
+
+    const domainExists = await verifyEmailDomain(email);
+    if (!domainExists) {
+      return res.status(400).json({ error: 'Email domain does not exist' });
     }
 
     const validRoles = ['admin', 'editor', 'viewer'];
@@ -273,6 +323,11 @@ export const checkEmail = async (req, res) => {
 
     if (!isKbtuEmail(email)) {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' })
+    }
+
+    const domainExists = await verifyEmailDomain(email);
+    if (!domainExists) {
+      return res.status(400).json({ error: 'Email domain does not exist' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } })
