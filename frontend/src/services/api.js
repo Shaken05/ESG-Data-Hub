@@ -1,6 +1,15 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const DEFAULT_API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+
+if (!import.meta.env.VITE_API_BASE_URL) {
+  if (import.meta.env.PROD) {
+    console.error('[ESG] VITE_API_BASE_URL is not set in production. API calls will attempt localhost and fail in Netlify/Rener deployments.')
+  } else {
+    console.warn('[ESG] VITE_API_BASE_URL is not set; using default localhost API URL for development.')
+  }
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
