@@ -9,6 +9,7 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:frontend",
     "setup": "npm run install:all && cd backend && npx prisma generate && npx prisma migrate dev"
   },
   "keywords": ["esg", "data-catalog", "inventory", "sustainability"],
