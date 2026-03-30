@@ -83,8 +83,16 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, async () => {
-  console.log(`🚀 ESG Data Inventory API running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  await ensureKbtuAdmin();
-});
+export default app;
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, async () => {
+    console.log(`🚀 ESG Data Inventory API running on http://localhost:${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    await ensureKbtuAdmin();
+  });
+} else {
+  // for tests, ensure the admin promotion logic runs too
+  ensureKbtuAdmin().catch((err) => console.error(err));
+}
+
