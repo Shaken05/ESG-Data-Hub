@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dns from 'dns/promises';
+import net from 'net';
 
 export const prisma = new PrismaClient();
 
@@ -49,6 +50,84 @@ export const verifyEmailDomain = async (email) => {
   }
 
   return false;
+};
+
+export const verifySmtpRecipient = async (email, timeout = 6000) => {
+  if (!isValidEmail(email)) return false;
+
+  const domain = email.split('@')[1].toLowerCase();
+
+  const mxRecords = await dns.resolveMx(domain).catch(() => []);
+  if (!mxRecords || mxRecords.length === 0) {
+    return false;
+  }
+
+  // sort by priority low-to-high
+  mxRecords.sort((a, b) => a.priority - b.priority);
+
+  for (const mx of mxRecords) {
+    try {
+      const socket = net.connect(25, mx.exchange);
+      socket.setTimeout(timeout);
+
+      const readLine = () => new Promise((resolve, reject) => {
+        let data = '';
+        const onData = (chunk) => {
+          data += chunk.toString();
+          if (data.endsWith('\r\n')) {
+            socket.removeListener('data', onData);
+            resolve(data);
+          }
+        };
+        socket.on('data', onData);
+        socket.once('error', reject);
+        socket.once('timeout', () => reject(new Error('timeout')));
+      });
+
+      const send = (cmd) => new Promise((resolve, reject) => {
+        socket.write(cmd + '\r\n', (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      await readLine();
+      await send(`EHLO localhost`);
+      await readLine();
+      await send(`MAIL FROM:<no-reply@kbtu.kz>`);
+      await readLine();
+      await send(`RCPT TO:<${email}>`);
+      const rcptResponse = await readLine();
+
+      await send('QUIT');
+      socket.end();
+
+      if (/^\d{3}\s/.test(rcptResponse) && !rcptResponse.startsWith('550')) {
+        return true;
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+
+  return false;
+};
+
+export const verifyEmailMailbox = async (email) => {
+  if (!isValidEmail(email)) return false;
+
+  const domainOk = await verifyEmailDomain(email);
+  if (!domainOk) return false;
+
+  if (process.env.SKIP_EMAIL_SMTP_CHECK === 'true') {
+    return true;
+  }
+
+  if (process.env.VERIFY_EMAIL_SMTP === 'true') {
+    return await verifySmtpRecipient(email);
+  }
+
+  return true;
 };
 
 // Hash password
@@ -128,9 +207,9 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ error: 'Email must be a valid @kbtu.kz address' });
     }
 
-    const domainExists = await verifyEmailDomain(email);
-    if (!domainExists) {
-      return res.status(400).json({ error: 'Email domain does not exist' });
+    const mailboxOk = await verifyEmailMailbox(email);
+    if (!mailboxOk) {
+      return res.status(400).json({ error: 'Email address does not exist' });
     }
 
     const validRoles = ['admin', 'editor', 'viewer'];
@@ -171,6 +250,15 @@ export const register = async (req, res) => {
     
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    if (!isValidEmail(email) || !isKbtuEmail(email)) {
+      return res.status(400).json({ error: 'Email must be a valid @kbtu.kz address' });
+    }
+
+    const mailboxOk = await verifyEmailMailbox(email);
+    if (!mailboxOk) {
+      return res.status(400).json({ error: 'Email address does not exist' });
     }
     
     const validRoles = ['admin', 'editor', 'viewer'];
@@ -325,9 +413,9 @@ export const checkEmail = async (req, res) => {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' })
     }
 
-    const domainExists = await verifyEmailDomain(email);
-    if (!domainExists) {
-      return res.status(400).json({ error: 'Email domain does not exist' });
+    const mailboxOk = await verifyEmailMailbox(email);
+    if (!mailboxOk) {
+      return res.status(400).json({ error: 'Email address does not exist' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } })
