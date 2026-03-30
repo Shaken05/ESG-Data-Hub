@@ -3,6 +3,9 @@ import request from 'supertest';
 import app from '../server.js';
 import { __mockPrismaClient } from '@prisma/client';
 
+process.env.VERIFY_EMAIL_SMTP = 'false';
+process.env.SKIP_EMAIL_DOMAIN_CHECK = 'false';
+
 jest.mock('dns/promises', () => ({
   resolveMx: jest.fn(),
   resolve4: jest.fn(),
