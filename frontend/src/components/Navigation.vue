@@ -49,6 +49,7 @@
           </div>
         </div>
 
+        <RouterLink v-if="authStore.isAdmin" to="/admin" class="topbar-link" active-class="topbar-link-active">{{ t('nav.adminPanel') }}</RouterLink>
         <RouterLink v-if="authStore.isAdmin" to="/audit-log" class="topbar-link" active-class="topbar-link-active">{{ t('nav.audit') }}</RouterLink>
         <RouterLink v-if="authStore.isEditor" to="/import" class="topbar-link" active-class="topbar-link-active">{{ t('nav.import') }}</RouterLink>
 

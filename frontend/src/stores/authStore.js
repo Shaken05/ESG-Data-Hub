@@ -33,6 +33,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function register(name, email, password) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await authAPI.register({ name, email, password })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || err.message
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchCurrentUser() {
     if (!token.value) return false
     

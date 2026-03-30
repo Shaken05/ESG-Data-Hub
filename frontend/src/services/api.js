@@ -21,10 +21,14 @@ api.interceptors.request.use((config) => {
 // Auth API
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
+  register: (data) => api.post('/auth/register', data),
+  checkEmail: (email) => api.get('/auth/check-email', { params: { email } }),
+  createUser: (data) => api.post('/auth/users', data),
   getCurrentUser: () => api.get('/auth/me'),
   getUsers: () => api.get('/auth/users'),
   updateUserRole: (id, role) => api.put(`/auth/users/${id}/role`, { role }),
-  deactivateUser: (id) => api.put(`/auth/users/${id}/deactivate`)
+  deactivateUser: (id) => api.put(`/auth/users/${id}/deactivate`),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`)
 }
 
 // Metrics API

@@ -8,6 +8,7 @@ export default {
     storage: 'Хранилища',
     gaps: 'Пробелы',
     audit: 'Журнал',
+    adminPanel: 'Панель администратора',
     import: 'Импорт',
     help: 'Справка',
     about: 'О системе',

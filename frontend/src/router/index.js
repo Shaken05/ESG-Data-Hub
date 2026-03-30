@@ -13,12 +13,18 @@ import Glossary from '../views/Glossary.vue'
 import Methodology from '../views/Methodology.vue'
 import Gaps from '../views/Gaps.vue'
 import AuditLog from '../views/AuditLog.vue'
+import AdminPanel from '../views/AdminPanel.vue'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/Register.vue')
   },
   {
     path: '/',
@@ -91,6 +97,12 @@ const routes = [
     path: '/audit-log',
     name: 'AuditLog',
     component: AuditLog,
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+  {
+    path: '/admin',
+    name: 'AdminPanel',
+    component: AdminPanel,
     meta: { requiresAuth: true, requiredRole: 'admin' }
   }
 ]

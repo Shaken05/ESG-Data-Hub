@@ -8,6 +8,7 @@ export default {
     storage: 'Сақтау',
     gaps: 'Бос орындар',
     audit: 'Журнал',
+    adminPanel: 'Әкімші панелі',
     import: 'Импорт',
     help: 'Анықтама',
     about: 'Жүйе туралы',

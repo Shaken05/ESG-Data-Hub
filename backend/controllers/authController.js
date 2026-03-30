@@ -7,6 +7,10 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRY = '7d';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const isValidEmail = (email) => emailRegex.test(email)
+const isKbtuEmail = (email) => /@kbtu\.kz$/i.test(email)
+
 // Hash password
 const hashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
@@ -22,7 +26,89 @@ const comparePassword = async (password, hashedPassword) => {
 const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 };
+// Public registration (kbtu.kz only)
+export const registerPublic = async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
 
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password and name are required' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    if (!isKbtuEmail(email)) {
+      return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: 'viewer',
+        active: true
+      },
+      select: { id: true, email: true, name: true, role: true }
+    });
+
+    return res.status(201).json({ message: 'Registration successful. Please check your email for confirmation steps (if configured).', user });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to register user', message: error.message });
+  }
+};
+
+// Admin creates a user (any role)
+export const createUser = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only administrators can create users' });
+    }
+
+    const { email, password, name, role } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password and name are required' });
+    }
+
+    if (!isValidEmail(email) || !isKbtuEmail(email)) {
+      return res.status(400).json({ error: 'Email must be a valid @kbtu.kz address' });
+    }
+
+    const validRoles = ['admin', 'editor', 'viewer'];
+    const userRole = role && validRoles.includes(role) ? role : 'viewer';
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: userRole,
+        active: true,
+      },
+      select: { id: true, email: true, name: true, role: true, active: true }
+    });
+
+    return res.status(201).json({ message: 'User created by admin', user });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to create user', message: error.message });
+  }
+};
 // Register new user (admin only)
 export const register = async (req, res) => {
   try {
@@ -174,6 +260,29 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+export const checkEmail = async (req, res) => {
+  try {
+    const email = req.query.email
+    if (!email) {
+      return res.status(400).json({ error: 'Email query parameter is required' })
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' })
+    }
+
+    if (!isKbtuEmail(email)) {
+      return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' })
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+
+    return res.json({ valid: true, available: !existingUser })
+  } catch (error) {
+    return res.status(500).json({ error: 'Email validation failed', message: error.message })
+  }
+};
+
 // Update user role (admin only)
 export const updateUserRole = async (req, res) => {
   try {
@@ -212,14 +321,14 @@ export const deactivateUser = async (req, res) => {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Only administrators can deactivate users' });
     }
-    
+
     const { id } = req.params;
-    
+
     // Prevent admin from deactivating themselves
     if (parseInt(id) === req.user.id) {
       return res.status(400).json({ error: 'You cannot deactivate your own account' });
     }
-    
+
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
       data: { active: false },
@@ -230,9 +339,30 @@ export const deactivateUser = async (req, res) => {
         active: true
       }
     });
-    
+
     res.json({ message: 'User deactivated', user });
   } catch (error) {
     res.status(500).json({ error: 'Failed to deactivate user', message: error.message });
+  }
+};
+
+// Delete user (admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only administrators can delete users' });
+    }
+
+    const { id } = req.params;
+
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+
+    await prisma.user.delete({ where: { id: parseInt(id) } });
+
+    res.json({ message: 'User deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete user', message: error.message });
   }
 };

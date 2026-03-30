@@ -8,6 +8,7 @@ export default {
     storage: 'Storage',
     gaps: 'Gaps',
     audit: 'Audit',
+    adminPanel: 'Admin Panel',
     import: 'Import',
     help: 'Help',
     about: 'About',

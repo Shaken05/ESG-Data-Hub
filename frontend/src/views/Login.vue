@@ -37,14 +37,6 @@
             />
           </div>
 
-          <div class="bg-primary-50 border border-primary-200 rounded p-3 text-sm text-primary-800">
-            <p class="font-medium mb-2">📋 Test Credentials:</p>
-            <ul class="space-y-1">
-              <li><strong>Admin:</strong> admin@university.edu / admin123</li>
-              <li><strong>Editor:</strong> editor@university.edu / editor123</li>
-              <li><strong>Viewer:</strong> viewer@university.edu / viewer123</li>
-            </ul>
-          </div>
 
           <button
             type="submit"
@@ -53,6 +45,10 @@
           >
             {{ authStore.loading ? 'Logging in...' : 'Login' }}
           </button>
+
+          <div class="mt-4 text-sm text-center">
+            <router-link to="/register" class="text-primary-600 hover:underline">Don't have an account? Register with @kbtu.kz</router-link>
+          </div>
         </form>
 
         <!-- Error Message -->
