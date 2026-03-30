@@ -81,6 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEditor,
     isViewer,
     login,
+    register,
     fetchCurrentUser,
     logout
   }
