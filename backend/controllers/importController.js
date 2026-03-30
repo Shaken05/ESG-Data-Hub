@@ -1,17 +1,45 @@
 import { PrismaClient } from '@prisma/client';
 import { logAction } from './auditController.js';
 import https from 'https';
+import { URL } from 'url';
 
 const prisma = new PrismaClient();
 
 // Helper function to fetch Google Sheets data as CSV
 const fetchGoogleSheetCSV = (url) => {
+  // support local proxy via environment (e.g. HTTP_PROXY/HTTPS_PROXY)
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
+    try {
+      const parsedUrl = new URL(url);
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'ESG-Data-Inventory/1.0',
+          'Accept': 'text/csv'
+        },
+        timeout: 20000
+      };
+
+      const req = https.request(options, (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          return reject(new Error(`Google Sheets returned ${res.statusCode}`));
+        }
+
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => resolve(data));
+      });
+
+      req.on('error', (err) => reject(err));
+      req.on('timeout', () => {
+        req.destroy(new Error('Timeout when fetching Google Sheets URL'));
+      });
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
   });
 };
 
@@ -66,14 +94,17 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
       return res.status(400).json({ error: 'Google Sheets URL is required' });
     }
     
-    // Convert to CSV export URL
-    const csvUrl = convertToCSVUrl(url);
-    
-    // Fetch CSV data
-    const csvData = await fetchGoogleSheetCSV(csvUrl);
-    
+// If the client already provided CSV text (for env without outbound network), use it
+    const csvText = req.body.csvData ? req.body.csvData : await (async () => {
+      if (!url) {
+        throw new Error('Google Sheets URL is required when csvData is not provided');
+      }
+      const csvUrl = convertToCSVUrl(url);
+      return await fetchGoogleSheetCSV(csvUrl);
+    })();
+
     // Parse CSV
-    const rows = parseCSV(csvData);
+    const rows = parseCSV(csvText);
     
     if (rows.length === 0) {
       return res.status(400).json({ error: 'No data found in spreadsheet' });
@@ -151,9 +182,14 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
     });
     
   } catch (error) {
-    res.status(500).json({ 
+    const networkErrors = ['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN'];
+    const status = networkErrors.includes(error.code) ? 502 : 500;
+    const hint = status === 502 ? 'Network error fetching Google Sheets URL. Check outbound access or use csvData body parameter.' : undefined;
+
+    res.status(status).json({ 
       error: 'Failed to import from Google Sheets', 
-      message: error.message 
+      message: error.message,
+      hint
     });
   }
 };
@@ -172,9 +208,14 @@ export const importSourcesFromGoogleSheets = async (req, res) => {
       return res.status(400).json({ error: 'Google Sheets URL is required' });
     }
     
-    const csvUrl = convertToCSVUrl(url);
-    const csvData = await fetchGoogleSheetCSV(csvUrl);
-    const rows = parseCSV(csvData);
+    const csvText = req.body.csvData ? req.body.csvData : await (async () => {
+      if (!url) {
+        throw new Error('Google Sheets URL is required when csvData is not provided');
+      }
+      const csvUrl = convertToCSVUrl(url);
+      return await fetchGoogleSheetCSV(csvUrl);
+    })();
+    const rows = parseCSV(csvText);
     
     if (rows.length === 0) {
       return res.status(400).json({ error: 'No data found in spreadsheet' });
@@ -221,9 +262,14 @@ export const importSourcesFromGoogleSheets = async (req, res) => {
     });
     
   } catch (error) {
-    res.status(500).json({ 
+    const networkErrors = ['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN'];
+    const status = networkErrors.includes(error.code) ? 502 : 500;
+    const hint = status === 502 ? 'Network error fetching Google Sheets URL. Check outbound access or use csvData body parameter.' : undefined;
+
+    res.status(status).json({ 
       error: 'Failed to import sources from Google Sheets', 
-      message: error.message 
+      message: error.message,
+      hint
     });
   }
 };
