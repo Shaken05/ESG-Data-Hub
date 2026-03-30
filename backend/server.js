@@ -13,8 +13,31 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
+
+const prisma = new PrismaClient();
+
+async function ensureKbtuAdmin() {
+  const email = 's_shynggyssuly@kbtu.kz';
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      console.warn(`⚠️ User ${email} not found. Admin promotion skipped.`);
+      return;
+    }
+    if (user.role === 'admin') {
+      console.log(`✅ User ${email} already admin.`);
+      return;
+    }
+    await prisma.user.update({ where: { email }, data: { role: 'admin' } });
+    console.log(`✅ User ${email} promoted to admin.`);
+  } catch (error) {
+    console.error(`❌ Failed to promote ${email} to admin:`, error);
+  }
+}
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,7 +83,8 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 ESG Data Inventory API running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  await ensureKbtuAdmin();
 });
