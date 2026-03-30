@@ -18,4 +18,4 @@ ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/esg_inventory?sch
 RUN npx prisma generate
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]

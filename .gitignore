@@ -14,5 +14,6 @@ dist/
 *.pem
 secrets/
 config/secrets/
+*.db
 *.db-journal
 docker-test*.db-journal
