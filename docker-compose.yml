@@ -25,6 +25,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/esg_inventory?schema=public"
       PORT: "3000"
+      JWT_SECRET: "replace-with-strong-secret"
     ports:
       - "3000:3000"
     depends_on:
@@ -32,6 +33,15 @@ services:
         condition: service_healthy
     command: >
       sh -c "npx prisma db push && node prisma/bootstrapSeed.js && node server.js"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   frontend:
     build:
@@ -39,14 +49,23 @@ services:
     container_name: esg-frontend
     working_dir: /app
     environment:
-      # Фронт ходит к API из браузера, поэтому host = localhost
       VITE_API_BASE_URL: "http://localhost:3000/api"
+      VITE_PORT: 5173
     ports:
       - "5173:5173"
     depends_on:
       - backend
     command: >
       sh -c "npm run dev -- --host 0.0.0.0 --port 5173"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
 
 volumes:
   postgres_data:

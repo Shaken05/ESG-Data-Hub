@@ -197,6 +197,57 @@ Frontend will run on http://localhost:5173
 5. **Departments** - Manage departments
 6. **Storage Locations** - Manage storage locations
 
+## � Deployment readiness checklist
+
+Это README теперь покрывает требования нового стандарта для изоляции на субдоменах.
+
+### 1) Порты и healthcheck
+- Backend: `PORT` (по умолчанию 3000). Переназначайте для параллельных инстансов (например, 3100,3200).
+- Frontend: `VITE_PORT` (по умолчанию 5173).
+- Healthcheck: `GET /api/health`.
+  - Пример: `curl -f http://localhost:3000/api/health`.
+
+### 2) `.env.example`
+- Backend: `backend/.env.example` (DATABASE_URL, PORT, NODE_ENV, JWT_SECRET, DB_NAME).
+- Frontend: `frontend/.env.example` (VITE_API_BASE_URL, VITE_PORT, VITE_BASE_URL).
+
+### 3) Уникальные env-значения
+- Для разных команд/субдоменов задать разные:
+  - `DATABASE_URL` с разной БД (`esg_inventory_<team>`)
+  - `PORT`/`VITE_PORT`
+  - `JWT_SECRET`
+
+### 4) Зависимости
+- PostgreSQL (обязательно). В проекте Redis не используется; при добавлении укажите `REDIS_URL`.
+
+### 5) Изоляция и Docker
+- Поддержка Docker в `docker-compose.yml`, backend + frontend + postgres.
+- Добавлены `restart: unless-stopped` и `deploy.resources` (CPUs/RAM).
+
+### 6) Оценка ресурсов
+- Backend: 300-500MB RAM + 0.25-0.5 CPU
+- Frontend: 150-250MB RAM + 0.10-0.25 CPU
+- PostgreSQL: 512-1024MB RAM, 1-2GB диска (рост с данными)
+
+### 7) Оценка нагрузки
+- Предполагаемое базовое: 50-100 RPS, 10-20 одновременных пользователей.
+- Для большего трафика требуется горизонтальное масштабирование + отдельный инстанс БД.
+
+### 8) Логи
+- Backend логирует ошибки и запросы через `console.error` в текущей конфигурации.
+- Рекомендуется подключить `winston`/`pino` с файловыми `transports` и ротацией.
+
+### 9) Деплой и перезапуск
+- `docker compose up -d --build` (из корня).
+- `docker compose restart backend` / `docker compose restart frontend`.
+- Для субдомена через nginx/proxy:
+  - `server_name api.example.com` → прокси к `http://backend:3000`
+  - `server_name app.example.com` → прокси к `http://frontend:5173`
+
+### 10) Независимость
+- Backend и frontend работают на разных портах, разные сервисы.
+- Основные конфликты решаются уникальными значениями в `.env`.
+
 ## 🔧 Development
 
 ### Adding Sample Data
@@ -206,7 +257,6 @@ You can use Prisma Studio to add sample data:
 cd backend
 npm run prisma:studio
 ```
-
 Or use the API endpoints via the frontend UI.
 
 ### Running Tests
