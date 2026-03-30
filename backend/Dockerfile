@@ -15,12 +15,14 @@ COPY . .
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV DATABASE_URL="file:./prisma/dev.db"
+# DATABASE_URL должен быть задан внешним окружением в проде (например, Render, Heroku и т.п.)
+# для локальной разработки через docker-compose можно использовать:
+# postgresql://postgres:postgres@postgres:5432/esg_inventory?schema=public
 
 RUN npx prisma generate
 
 EXPOSE 3000
 
-# При запуске контейнера прогоняем миграции и стартуем сервер
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# При запуске прогоняем синхронизацию схемы с БД и стартуем сервер
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node server.js"]
 

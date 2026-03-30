@@ -23,7 +23,7 @@ services:
     working_dir: /app
     environment:
       NODE_ENV: production
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/esg_inventory?schema=public"
+      DATABASE_URL: "postgresql://esg_data_hub_user:zSOmvh5JGVumwDuMjHe34XPTF5K0bZhS@dpg-d75ankc50q8c73chcal0-a/esg_data_hub?sslmode=require"
       PORT: "3000"
       JWT_SECRET: "replace-with-strong-secret"
     ports:

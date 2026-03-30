@@ -38,6 +38,12 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/export', exportRoutes);
 
+// Root route (non-API) redirect to health check or frontend
+app.get('/', (req, res) => {
+  // If you are hosting frontend separately, this route can be changed to serve index.html instead
+  res.redirect('/api/health');
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'ESG Data Inventory API is running' });
