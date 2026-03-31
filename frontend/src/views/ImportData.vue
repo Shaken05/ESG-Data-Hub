@@ -3,14 +3,14 @@
     <!-- Permission Check -->
     <div v-if="!authStore.isEditor" class="card bg-red-50 border border-red-200">
       <p class="text-red-800 font-semibold">
-        🔒 Access Denied: Only Editors and Administrators can import data.
+        🔒 {{ t('import.accessDenied') }}
       </p>
-      <p class="text-red-600 text-sm mt-2">Your current role: <strong>{{ authStore.user?.role }}</strong></p>
+      <p class="text-red-600 text-sm mt-2">{{ t('import.yourRole') }} <strong>{{ authStore.user?.role }}</strong></p>
     </div>
 
     <template v-else>
       <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gray-900">Import ESG Metrics</h1>
+        <h1 class="text-3xl font-bold text-gray-900">{{ t('import.title') }}</h1>
       </div>
 
       <!-- Tabs Navigation -->
@@ -25,7 +25,7 @@
               ? 'border-primary-600 text-primary-600' 
               : 'border-transparent text-gray-600 hover:text-gray-900'"
           >
-            {{ tab.icon }} {{ tab.title }}
+            {{ tab.icon }} {{ t(`import.tabs.${tab.id}`) }}
           </button>
         </div>
       </div>
@@ -33,27 +33,27 @@
       <!-- TAB 1: Google Sheets Import -->
       <div v-show="activeTab === 'sheets'" class="space-y-4">
         <div class="card bg-primary-50 border border-primary-200">
-          <h2 class="text-lg font-semibold text-primary-900 mb-2">📋 How to Import from Google Sheets</h2>
+          <h2 class="text-lg font-semibold text-primary-900 mb-2">📋 {{ t('import.sheets.howTo') }}</h2>
           <ol class="list-decimal list-inside space-y-2 text-sm text-primary-800">
-            <li>Open your Google Sheet with ESG data</li>
-            <li>Click <strong>File → Share → Publish to web</strong></li>
-            <li>Choose "Link" and "Entire Document" or specific sheet</li>
-            <li>Copy the URL and paste it below</li>
-            <li>Click Import</li>
+            <li>{{ t('import.sheets.step1') }}</li>
+            <li>{{ t('import.sheets.step2') }}</li>
+            <li>{{ t('import.sheets.step3') }}</li>
+            <li>{{ t('import.sheets.step4') }}</li>
+            <li>{{ t('import.sheets.step5') }}</li>
           </ol>
         </div>
 
         <div class="card">
-          <h2 class="text-xl font-semibold mb-4">📊 Google Sheets URL</h2>
+          <h2 class="text-xl font-semibold mb-4">📊 {{ t('import.sheets.title') }}</h2>
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                Google Sheets URL
+                {{ t('import.sheets.url') }}
               </label>
               <input
                 v-model="sheetsUrl"
                 type="url"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
+                :placeholder="t('import.sheets.urlPlaceholder')"
                 class="input-field"
               />
             </div>
@@ -62,55 +62,55 @@
             <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded border">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Metric Name *
+                  {{ t('import.sheets.metricNameRequired') }}
                 </label>
                 <input
                   v-model="sheetsMetric.name"
                   type="text"
-                  placeholder="e.g., Energy Consumption Data"
+                  :placeholder="t('import.sheets.metricNamePlaceholder')"
                   class="input-field"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                  {{ t('common.category') }} *
                 </label>
                 <select v-model="sheetsMetric.category" class="input-field">
-                  <option value="E">E - Environmental</option>
-                  <option value="S">S - Social</option>
-                  <option value="G">G - Governance</option>
+                  <option value="E">{{ t('import.sheets.environmentalOption') }}</option>
+                  <option value="S">{{ t('import.sheets.socialOption') }}</option>
+                  <option value="G">{{ t('import.sheets.governanceOption') }}</option>
                 </select>
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {{ t('common.description') }}
                 </label>
                 <textarea
                   v-model="sheetsMetric.description"
-                  placeholder="Brief description of this dataset"
+                  :placeholder="t('import.csv.descriptionPlaceholder')"
                   rows="2"
                   class="input-field"
                 ></textarea>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Subcategory
+                  {{ t('metricsList.subcategory') }}
                 </label>
                 <input
                   v-model="sheetsMetric.subcategory"
                   type="text"
-                  placeholder="e.g., Energy"
+                  :placeholder="t('import.csv.subcategoryPlaceholder')"
                   class="input-field"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Unit
+                  {{ t('common.unit') }}
                 </label>
                 <input
                   v-model="sheetsMetric.unit"
                   type="text"
-                  placeholder="e.g., kWh"
+                  :placeholder="t('import.csv.unitPlaceholder')"
                   class="input-field"
                 />
               </div>
@@ -121,7 +121,7 @@
               :disabled="!sheetsUrl || !sheetsMetric.name || loading"
               class="btn-primary disabled:opacity-50"
             >
-              {{ loading === 'sheets' ? 'Importing...' : '📥 Import from Google Sheets' }}
+              {{ loading === 'sheets' ? t('common.loading') : `📥 ${t('import.sheets.importButton')}` }}
             </button>
           </div>
         </div>
@@ -130,13 +130,13 @@
       <!-- TAB 2: CSV File Upload -->
       <div v-show="activeTab === 'csv'" class="space-y-4">
         <div class="card">
-          <h2 class="text-xl font-semibold mb-4">📄 Upload CSV File</h2>
+          <h2 class="text-xl font-semibold mb-4">📄 {{ t('import.csv.title') }}</h2>
           <div class="space-y-4">
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-400 transition cursor-pointer"
               @click="$refs.csvInput.click()">
               <p class="text-2xl">📁</p>
-              <p class="text-gray-700 font-medium">Click to upload CSV file or drag and drop</p>
-              <p class="text-gray-500 text-sm">Maximum 10MB</p>
+              <p class="text-gray-700 font-medium">{{ t('import.csv.uploadPrompt') }}</p>
+              <p class="text-gray-500 text-sm">{{ t('import.csv.maxSize') }}</p>
               <input
                 ref="csvInput"
                 @change="handleFileSelect"
@@ -164,55 +164,55 @@
             <div v-if="selectedFile" class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded border">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Metric Name *
+                  {{ t('import.csv.metricNameRequired') }}
                 </label>
                 <input
                   v-model="csvMetric.name"
                   type="text"
-                  placeholder="e.g., Energy Consumption Data"
+                  :placeholder="t('import.csv.metricNamePlaceholder')"
                   class="input-field"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                  {{ t('import.csv.categoryRequired') }}
                 </label>
                 <select v-model="csvMetric.category" class="input-field">
-                  <option value="E">E - Environmental</option>
-                  <option value="S">S - Social</option>
-                  <option value="G">G - Governance</option>
+                  <option value="E">{{ t('import.csv.environmentalOption') }}</option>
+                  <option value="S">{{ t('import.csv.socialOption') }}</option>
+                  <option value="G">{{ t('import.csv.governanceOption') }}</option>
                 </select>
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {{ t('common.description') }}
                 </label>
                 <textarea
                   v-model="csvMetric.description"
-                  placeholder="Brief description of this dataset"
+                  :placeholder="t('import.csv.descriptionPlaceholder')"
                   rows="2"
                   class="input-field"
                 ></textarea>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Subcategory
+                  {{ t('metricsList.subcategory') }}
                 </label>
                 <input
                   v-model="csvMetric.subcategory"
                   type="text"
-                  placeholder="e.g., Energy"
+                  :placeholder="t('import.csv.subcategoryPlaceholder')"
                   class="input-field"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Unit
+                  {{ t('common.unit') }}
                 </label>
                 <input
                   v-model="csvMetric.unit"
                   type="text"
-                  placeholder="e.g., kWh"
+                  :placeholder="t('import.csv.unitPlaceholder')"
                   class="input-field"
                 />
               </div>
@@ -223,7 +223,7 @@
               :disabled="!selectedFile || !csvMetric.name || loading"
               class="btn-primary w-full disabled:opacity-50"
             >
-              {{ loading === 'csv' ? 'Uploading...' : '📤 Upload CSV' }}
+              {{ loading === 'csv' ? t('common.loading') : `📤 ${t('import.csv.uploadButton')}` }}
             </button>
           </div>
         </div>
@@ -392,21 +392,21 @@
       <!-- Results -->
       <div v-if="importResult" class="card" :class="importResult.success ? 'bg-green-50' : 'bg-red-50'">
         <h3 class="text-lg font-semibold mb-2" :class="importResult.success ? 'text-green-900' : 'text-red-900'">
-          {{ importResult.success ? '✅ Import Successful' : '❌ Import Failed' }}
+          {{ importResult.success ? '✅ ' : '❌ ' }}{{ importResult.success ? t('import.result.success') : t('import.result.failed') }}
         </h3>
         <div class="text-sm" :class="importResult.success ? 'text-green-800' : 'text-red-800'">
-          <p v-if="importResult.imported">Imported {{ importResult.imported }} items successfully</p>
+          <p v-if="importResult.imported">{{ t('import.result.imported', { count: importResult.imported }) }}</p>
           <p v-if="importResult.errors > 0" class="text-orange-600">
-            {{ importResult.errors }} items failed to import
+            {{ t('import.result.failed_count', { count: importResult.errors }) }}
           </p>
           <div v-if="importResult.errorDetails && importResult.errorDetails.length > 0" class="mt-3">
-            <p class="font-medium">Errors:</p>
+            <p class="font-medium">{{ t('import.result.errors') }}:</p>
             <ul class="list-disc list-inside ml-2">
               <li v-for="(error, index) in importResult.errorDetails.slice(0, 5)" :key="index">
                 {{ error.error }}
               </li>
               <li v-if="importResult.errorDetails.length > 5" class="font-medium">
-                ... and {{ importResult.errorDetails.length - 5 }} more errors
+                ... {{ t('import.result.failed_count', { count: importResult.errorDetails.length - 5 }) }}
               </li>
             </ul>
           </div>
@@ -414,33 +414,33 @@
             @click="goToMetrics"
             class="btn-primary mt-4 disabled:opacity-50"
           >
-            ✅ View Metrics
+            ✅ {{ t('import.result.viewMetrics') }}
           </button>
         </div>
       </div>
 
       <!-- Import Batch History -->
       <div class="card mt-6">
-        <h3 class="text-lg font-semibold mb-3">📦 Recent Import Batches</h3>
+        <h3 class="text-lg font-semibold mb-3">📦 {{ t('import.batch.title') }}</h3>
 
         <template v-if="batchesLoading">
-          <p>Loading batch history...</p>
+          <p>{{ t('import.batch.loading') }}</p>
         </template>
 
         <template v-else-if="batchesError">
-          <p class="text-red-700">Error loading batches: {{ batchesError }}</p>
+          <p class="text-red-700">{{ t('import.batch.error') }} {{ batchesError }}</p>
         </template>
 
         <template v-else-if="importBatches.length === 0">
-          <p class="text-gray-600">No import batches yet. Start importing data above.</p>
+          <p class="text-gray-600">{{ t('import.batch.empty') }}</p>
         </template>
 
         <template v-else>
           <ul class="space-y-2">
             <li v-for="batch in importBatches.slice(0,5)" :key="batch.id" class="p-2 bg-gray-50 border rounded">
-              <p class="font-medium">Batch #{{ batch.id }} — {{ batch.source }} — {{ batch.status }}</p>
-              <p class="text-sm text-gray-600">Rows: {{ batch.rowCount }} | Uploaded by: {{ batch.user?.email || 'unknown' }} | {{ new Date(batch.createdAt).toLocaleString() }}</p>
-              <p class="text-xs text-gray-500">Metrics in batch: {{ batch.metrics.length }}</p>
+              <p class="font-medium">{{ t('import.batch.status') }} #{{ batch.id }} — {{ batch.source }} — {{ batch.status }}</p>
+              <p class="text-sm text-gray-600">{{ t('import.batch.rows_count') }} {{ batch.rowCount }} | {{ t('import.batch.uploaded_by') }} {{ batch.user?.email || 'unknown' }} | {{ new Date(batch.createdAt).toLocaleString() }}</p>
+              <p class="text-xs text-gray-500">{{ t('import.batch.metrics_in_batch') }} {{ batch.metrics.length }}</p>
             </li>
           </ul>
         </template>
@@ -456,10 +456,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { importAPI } from '../services/api';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const API_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:3000/api' : '');
 if (!import.meta.env.VITE_API_BASE_URL && import.meta.env.PROD) {
@@ -467,10 +469,10 @@ if (!import.meta.env.VITE_API_BASE_URL && import.meta.env.PROD) {
 }
 
 const tabs = [
-  { id: 'sheets', title: 'Google Sheets', icon: '📊' },
-  { id: 'csv', title: 'CSV File', icon: '📄' },
-  { id: 'single', title: 'Single Metric', icon: '➕' },
-  { id: 'json', title: 'JSON Batch', icon: '📝' }
+  { id: 'sheets', icon: '📊' },
+  { id: 'csv', icon: '📄' },
+  { id: 'single', icon: '➕' },
+  { id: 'json', icon: '📝' }
 ];
 
 const activeTab = ref('sheets');
@@ -529,7 +531,7 @@ const handleFileSelect = (event) => {
   const file = event.target.files[0];
   if (file) {
     if (file.size > 10 * 1024 * 1024) {
-      errorMessage.value = 'File size must be less than 10MB';
+      errorMessage.value = t('import.errors.fileTooLarge');
       return;
     }
     selectedFile.value = file;
@@ -547,12 +549,12 @@ const handleImport = async (type) => {
 
     if (type === 'sheets') {
       if (!sheetsUrl.value) {
-        errorMessage.value = 'Please enter a Google Sheets URL';
+        errorMessage.value = t('import.errors.sheetsUrlRequired');
         loading.value = false;
         return;
       }
       if (!sheetsMetric.value.name) {
-        errorMessage.value = 'Please enter metric name';
+        errorMessage.value = t('import.errors.metricNameRequired');
         loading.value = false;
         return;
       }
@@ -572,12 +574,12 @@ const handleImport = async (type) => {
       );
     } else if (type === 'csv') {
       if (!selectedFile.value) {
-        errorMessage.value = 'Please select a CSV file';
+        errorMessage.value = t('import.errors.csvFileRequired');
         loading.value = false;
         return;
       }
       if (!csvMetric.value.name) {
-        errorMessage.value = 'Please enter metric name';
+        errorMessage.value = t('import.errors.metricNameRequired');
         loading.value = false;
         return;
       }
@@ -602,7 +604,7 @@ const handleImport = async (type) => {
       );
     } else if (type === 'single') {
       if (!singleMetric.value.name) {
-        errorMessage.value = 'Metric name is required';
+        errorMessage.value = t('import.errors.metricNameRequired');
         loading.value = false;
         return;
       }
@@ -613,14 +615,14 @@ const handleImport = async (type) => {
       );
     } else if (type === 'json') {
       if (!jsonInput.value.trim()) {
-        errorMessage.value = 'Please paste a JSON array';
+        errorMessage.value = t('import.errors.jsonRequired');
         loading.value = false;
         return;
       }
       try {
         const metrics = JSON.parse(jsonInput.value);
         if (!Array.isArray(metrics)) {
-          errorMessage.value = 'JSON must be an array of metrics';
+          errorMessage.value = t('import.errors.jsonMustBeArray');
           loading.value = false;
           return;
         }
@@ -630,7 +632,7 @@ const handleImport = async (type) => {
           { headers: { Authorization: `Bearer ${authStore.token}` } }
         );
       } catch (e) {
-        errorMessage.value = 'Invalid JSON format: ' + e.message;
+        errorMessage.value = t('import.errors.invalidJson') + ' ' + e.message;
         loading.value = false;
         return;
       }

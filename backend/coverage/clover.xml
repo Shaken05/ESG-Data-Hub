@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1774948723341" clover="3.2.0">
-  <project timestamp="1774948723341" name="All files">
+<coverage generated="1774949412302" clover="3.2.0">
+  <project timestamp="1774949412302" name="All files">
     <metrics statements="939" coveredstatements="143" conditionals="588" coveredconditionals="34" methods="135" coveredmethods="9" elements="1662" coveredelements="186" complexity="0" loc="939" ncloc="939" packages="1" files="12" classes="12"/>
     <file name="analyticsController.js" path="D:\code\esgproject\backend\controllers\analyticsController.js">
       <metrics statements="75" coveredstatements="4" conditionals="50" coveredconditionals="0" methods="10" coveredmethods="0"/>
