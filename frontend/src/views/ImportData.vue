@@ -303,6 +303,33 @@
         </div>
       </div>
 
+      <!-- Import Batch History -->
+      <div class="card mt-6">
+        <h3 class="text-lg font-semibold mb-3">📦 Recent Import Batches</h3>
+
+        <template v-if="batchesLoading">
+          <p>Loading batch history...</p>
+        </template>
+
+        <template v-else-if="batchesError">
+          <p class="text-red-700">Error loading batches: {{ batchesError }}</p>
+        </template>
+
+        <template v-else-if="importBatches.length === 0">
+          <p class="text-gray-600">No import batches yet. Start importing data above.</p>
+        </template>
+
+        <template v-else>
+          <ul class="space-y-2">
+            <li v-for="batch in importBatches.slice(0,5)" :key="batch.id" class="p-2 bg-gray-50 border rounded">
+              <p class="font-medium">Batch #{{ batch.id }} — {{ batch.source }} — {{ batch.status }}</p>
+              <p class="text-sm text-gray-600">Rows: {{ batch.rowCount }} | Uploaded by: {{ batch.user?.email || 'unknown' }} | {{ new Date(batch.createdAt).toLocaleString() }}</p>
+              <p class="text-xs text-gray-500">Metrics in batch: {{ batch.metrics.length }}</p>
+            </li>
+          </ul>
+        </template>
+      </div>
+
       <!-- Error Message -->
       <div v-if="errorMessage" class="card bg-red-50 border border-red-200">
         <p class="text-red-800">{{ errorMessage }}</p>
@@ -312,14 +339,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
+import { importAPI } from '../services/api';
 
 const authStore = useAuthStore();
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:3000/api' : '');
 if (!import.meta.env.VITE_API_BASE_URL && import.meta.env.PROD) {
-  console.error('[ESG] VITE_API_BASE_URL is missing in production: falling back to localhost URL. Set the environment variable in Netlify!');
+  throw new Error('[ESG] VITE_API_BASE_URL is required in production. Set the variable in Netlify/Render environment and redeploy.');
 }
 
 const tabs = [
@@ -336,6 +364,10 @@ const selectedFile = ref(null);
 const jsonInput = ref('');
 const importResult = ref(null);
 const errorMessage = ref('');
+
+const importBatches = ref([]);
+const batchesLoading = ref(false);
+const batchesError = ref('');
 
 const singleMetric = ref({
   name: '',
@@ -464,6 +496,24 @@ const handleImport = async (type) => {
     loading.value = false;
   }
 };
+
+const loadImportBatches = async () => {
+  batchesLoading.value = true;
+  batchesError.value = '';
+
+  try {
+    const response = await importAPI.getBatches();
+    importBatches.value = response.data;
+  } catch (error) {
+    batchesError.value = error.response?.data?.message || error.response?.data?.error || error.message;
+  } finally {
+    batchesLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadImportBatches();
+});
 
 const goToMetrics = () => {
   window.location.href = '/metrics';

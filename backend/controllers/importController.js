@@ -80,6 +80,21 @@ const parseCSV = (csvText) => {
   return rows;
 };
 
+// Create import batch record
+const createImportBatch = async ({ userId, source, sourceUrl = null, fileName = null, rowCount = 0, status = 'PENDING' }) => {
+  const batch = await prisma.importBatch.create({
+    data: {
+      userId,
+      source,
+      sourceUrl,
+      fileName,
+      rowCount,
+      status
+    }
+  });
+  return batch;
+};
+
 // Import metrics from Google Sheets (editor and admin only)
 export const importMetricsFromGoogleSheets = async (req, res) => {
   try {
@@ -93,8 +108,17 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
     if (!url) {
       return res.status(400).json({ error: 'Google Sheets URL is required' });
     }
+
+    // Create a batch group to track this import
+    const batch = await createImportBatch({
+      userId: req.user.id,
+      source: 'GOOGLE_SHEETS',
+      sourceUrl: url,
+      rowCount: 0,
+      status: 'PENDING'
+    });
     
-// If the client already provided CSV text (for env without outbound network), use it
+    // If the client already provided CSV text (for env without outbound network), use it
     const csvText = req.body.csvData ? req.body.csvData : await (async () => {
       if (!url) {
         throw new Error('Google Sheets URL is required when csvData is not provided');
@@ -105,6 +129,7 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
 
     // Parse CSV
     const rows = parseCSV(csvText);
+    await prisma.importBatch.update({ where: { id: batch.id }, data: { rowCount: rows.length } });
     
     if (rows.length === 0) {
       return res.status(400).json({ error: 'No data found in spreadsheet' });
@@ -141,7 +166,7 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: metricData });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
         
         // Handle standards linking (comma-separated: "GRI,SASB,TCFD")
         const standardsColumn = row.standards || row.Standards || row.standard || row.Standard || '';
@@ -173,8 +198,15 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
       }
     }
     
+    const finalStatus = errors.length > 0 ? 'PARTIAL' : 'COMPLETED';
+    await prisma.importBatch.update({
+      where: { id: batch.id },
+      data: { status: finalStatus }
+    });
+
     res.json({
       success: true,
+      batchId: batch.id,
       imported: importedMetrics.length,
       errors: errors.length,
       metrics: importedMetrics,
@@ -345,6 +377,14 @@ export const importMetricsManual = async (req, res) => {
     if (!Array.isArray(metrics) || metrics.length === 0) {
       return res.status(400).json({ error: 'Must provide array of metrics in body' });
     }
+
+    // Create import batch for manual metrics
+    const batch = await createImportBatch({
+      userId: req.user.id,
+      source: 'MANUAL',
+      rowCount: metrics.length,
+      status: 'PENDING'
+    });
     
     // Get all standards for linking
     const standards = await prisma.standard.findMany();
@@ -375,7 +415,7 @@ export const importMetricsManual = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: metricData });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
         
         // Handle standards linking
         const standardsArray = row.standards || [];
@@ -409,8 +449,15 @@ export const importMetricsManual = async (req, res) => {
       }
     }
     
+    const finalStatus = errors.length > 0 ? 'PARTIAL' : 'COMPLETED';
+    await prisma.importBatch.update({
+      where: { id: batch.id },
+      data: { status: finalStatus }
+    });
+
     res.json({
       success: true,
+      batchId: batch.id,
       imported: importedMetrics.length,
       errors: errors.length,
       metrics: importedMetrics,
@@ -444,6 +491,14 @@ export const importMetricsCSV = async (req, res) => {
     if (rows.length === 0) {
       return res.status(400).json({ error: 'CSV file is empty or invalid' });
     }
+
+    const batch = await createImportBatch({
+      userId: req.user.id,
+      source: 'CSV_UPLOAD',
+      fileName: req.file.originalname || null,
+      rowCount: rows.length,
+      status: 'PENDING'
+    });
     
     // Get all standards for linking
     const standards = await prisma.standard.findMany();
@@ -474,7 +529,7 @@ export const importMetricsCSV = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: metricData });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
         
         // Handle standards linking
         const standardsColumn = row.standards || row.Standards || row.standard || row.Standard || '';
@@ -506,8 +561,15 @@ export const importMetricsCSV = async (req, res) => {
       }
     }
     
+    const finalStatus = errors.length > 0 ? 'PARTIAL' : 'COMPLETED';
+    await prisma.importBatch.update({
+      where: { id: batch.id },
+      data: { status: finalStatus }
+    });
+
     res.json({
       success: true,
+      batchId: batch.id,
       imported: importedMetrics.length,
       errors: errors.length,
       metrics: importedMetrics,
@@ -519,6 +581,58 @@ export const importMetricsCSV = async (req, res) => {
       error: 'Failed to import metrics from CSV', 
       message: error.message 
     });
+  }
+};
+
+// Get list of import batches (admin/editor)
+export const getImportBatches = async (req, res) => {
+  try {
+    if (!req.user || !['admin', 'editor'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'You do not have permission to view import batches' });
+    }
+
+    const batches = await prisma.importBatch.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, email: true, name: true }
+        },
+        metrics: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+
+    res.json(batches);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch import batches', message: error.message });
+  }
+};
+
+export const getImportBatchById = async (req, res) => {
+  try {
+    if (!req.user || !['admin', 'editor'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'You do not have permission to view import batches' });
+    }
+
+    const { id } = req.params;
+    const batch = await prisma.importBatch.findUnique({
+      where: { id: Number(id) },
+      include: {
+        user: {
+          select: { id: true, email: true, name: true }
+        },
+        metrics: true
+      }
+    });
+
+    if (!batch) {
+      return res.status(404).json({ error: 'Import batch not found' });
+    }
+
+    res.json(batch);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch import batch', message: error.message });
   }
 };
 
@@ -546,8 +660,15 @@ export const addSingleMetric = async (req, res) => {
       unit: unit || '',
       status: status || 'PLANNED'
     };
+
+    const batch = await createImportBatch({
+      userId: req.user.id,
+      source: 'SINGLE',
+      rowCount: 1,
+      status: 'COMPLETED'
+    });
     
-    const metric = await prisma.metric.create({ data: metricData });
+    const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
     
     // Handle standards linking
     const standardMap = {};

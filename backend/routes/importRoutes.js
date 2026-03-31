@@ -6,7 +6,9 @@ import {
   importMetricsManual,
   importMetricsCSV,
   addSingleMetric,
-  getImportTemplate
+  getImportTemplate,
+  getImportBatches,
+  getImportBatchById
 } from '../controllers/importController.js';
 
 const router = express.Router();
@@ -26,6 +28,10 @@ router.post('/manual/metrics', importMetricsManual);
 
 // Import metrics from CSV file
 router.post('/csv/metrics', upload.single('file'), importMetricsCSV);
+
+// Import batch metadata
+router.get('/batches', getImportBatches);
+router.get('/batches/:id', getImportBatchById);
 
 // Add single metric quickly
 router.post('/single', addSingleMetric);

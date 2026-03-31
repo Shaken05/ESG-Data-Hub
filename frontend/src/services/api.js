@@ -1,13 +1,12 @@
 import axios from 'axios'
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3000/api'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:3000/api' : '')
 
 if (!import.meta.env.VITE_API_BASE_URL) {
   if (import.meta.env.PROD) {
-    console.error('[ESG] VITE_API_BASE_URL is not set in production. API calls will attempt localhost and fail in Netlify/Rener deployments.')
+    throw new Error('[ESG] VITE_API_BASE_URL is required in production. Set it in Netlify/Render env and redeploy.')
   } else {
-    console.warn('[ESG] VITE_API_BASE_URL is not set; using default localhost API URL for development.')
+    console.warn('[ESG] VITE_API_BASE_URL is not set; using localhost API URL for development.')
   }
 }
 
@@ -84,6 +83,12 @@ export const metricLinksAPI = {
   create: (data) => api.post('/metric-links', data),
   update: (id, data) => api.put(`/metric-links/${id}`, data),
   delete: (id) => api.delete(`/metric-links/${id}`)
+}
+
+// Import API
+export const importAPI = {
+  getBatches: () => api.get('/import/batches'),
+  getBatch: (id) => api.get(`/import/batches/${id}`)
 }
 
 // Gaps (heatmap) API
