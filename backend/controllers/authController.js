@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dns from 'dns/promises';
 import net from 'net';
+import { sendPasswordResetEmail } from '../lib/emailService.js';
 
 export const prisma = new PrismaClient();
 
@@ -534,28 +535,30 @@ export const requestPasswordReset = async (req, res) => {
       });
     }
 
-    // Generate a temporary reset code (6-digit number for simplicity, or use a token)
-    // For production, consider using JWT or a dedicated reset token
-    const resetCode = Math.random().toString().substring(2, 8);
+    // Generate a temporary reset code (6-digit number)
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     const resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Store reset code on user (in production, use a separate ResetToken table)
+    // Store reset code on user
     await prisma.user.update({
       where: { email },
       data: {
-        // These fields should exist in the User schema
-        // If not, store in a separate ResetToken model
         resetCode: resetCode,
         resetCodeExpiry: resetCodeExpiry
       }
     });
 
-    // In production, send email with reset code
-    // For now, return it (DEV MODE ONLY)
+    // Send email with reset code
+    const emailSent = await sendPasswordResetEmail(email, resetCode);
+
+    // In production, don't send code in response
+    // In development, include it for testing
     const isDev = process.env.NODE_ENV !== 'production';
     res.json({ 
-      message: 'Password reset code sent to email',
-      resetCode: isDev ? resetCode : undefined, // Only in dev
+      message: emailSent 
+        ? 'Password reset code has been sent to your email. Check your inbox and spam folder.'
+        : 'A reset code was generated. Please check your email. If you did not receive it, contact support.',
+      code: isDev ? resetCode : undefined,
       expiryMinutes: 15
     });
   } catch (error) {

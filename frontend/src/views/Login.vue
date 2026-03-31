@@ -135,7 +135,8 @@
 
         <!-- Success Message -->
         <div v-if="resetSuccess" class="mt-4 bg-green-50 border border-green-200 rounded p-3 text-green-800 text-sm">
-          {{ resetSuccess }}
+          <p class="font-medium">✅ {{ resetSuccess }}</p>
+          <p v-if="resetStep === 2" class="text-xs text-green-700 mt-1">Check your inbox and spam folder. Code expires in 15 minutes.</p>
         </div>
       </div>
 
@@ -157,8 +158,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loginForm = ref({
-  email: 'admin@university.edu',
-  password: 'admin123'
+  email: '',
+  password: ''
 })
 
 const showResetForm = ref(false)
@@ -200,6 +201,11 @@ async function handleResetPassword() {
       const response = await authAPI.requestPasswordReset(resetForm.value.email)
       resetSuccess.value = response.data.message
       resetStep.value = 2
+      resetError.value = ''
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => {
+        if (resetSuccess.value) resetSuccess.value = ''
+      }, 5000)
     } else {
       // Complete password reset
       const response = await authAPI.resetPassword(
@@ -207,15 +213,19 @@ async function handleResetPassword() {
         resetForm.value.code,
         resetForm.value.newPassword
       )
-      resetSuccess.value = response.data.message + ' Redirecting to login...'
+      resetSuccess.value = response.data.message
+      resetError.value = ''
+      // Reset form and redirect to login after 2 seconds
       setTimeout(() => {
         showResetForm.value = false
         resetStep.value = 1
         resetForm.value = { email: '', code: '', newPassword: '' }
+        resetSuccess.value = ''
       }, 2000)
     }
   } catch (error) {
     resetError.value = error.response?.data?.error || error.message
+    resetSuccess.value = ''
   } finally {
     resetLoading.value = false
   }

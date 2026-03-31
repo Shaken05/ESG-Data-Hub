@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">30.07% </span>
+                <span class="strong">29.96% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>80/266</span>
+                <span class='fraction'>80/267</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">21.11% </span>
+                <span class="strong">20.85% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>34/161</span>
+                <span class='fraction'>34/163</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">29.92% </span>
+                <span class="strong">29.8% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>76/254</span>
+                <span class='fraction'>76/255</span>
             </div>
         
             
@@ -676,7 +676,11 @@
 <a name='L611'></a><a href='#L611'>611</a>
 <a name='L612'></a><a href='#L612'>612</a>
 <a name='L613'></a><a href='#L613'>613</a>
-<a name='L614'></a><a href='#L614'>614</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L614'></a><a href='#L614'>614</a>
+<a name='L615'></a><a href='#L615'>615</a>
+<a name='L616'></a><a href='#L616'>616</a>
+<a name='L617'></a><a href='#L617'>617</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1213,7 +1217,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1227,11 +1230,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1294,6 +1300,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dns from 'dns/promises';
 import net from 'net';
+import { sendPasswordResetEmail } from '../lib/emailService.js';
 &nbsp;
 export const prisma = new PrismaClient();
 &nbsp;
@@ -1825,28 +1832,30 @@ export const requestPasswordReset = <span class="fstat-no" title="function not c
       });
     }
 &nbsp;
-    // Generate a temporary reset code (6-digit number for simplicity, or use a token)
-    // For production, consider using JWT or a dedicated reset token
-    const resetCode = <span class="cstat-no" title="statement not covered" >Math.random().toString().substring(2, 8);</span>
+    // Generate a temporary reset code (6-digit number)
+    const resetCode = <span class="cstat-no" title="statement not covered" >Math.floor(100000 + Math.random() * 900000).toString();</span>
     const resetCodeExpiry = <span class="cstat-no" title="statement not covered" >new Date(Date.now() + 15 * 60 * 1000);</span> // 15 minutes
 &nbsp;
-    // Store reset code on user (in production, use a separate ResetToken table)
+    // Store reset code on user
 <span class="cstat-no" title="statement not covered" >    await prisma.user.update({</span>
       where: { email },
       data: {
-        // These fields should exist in the User schema
-        // If not, store in a separate ResetToken model
         resetCode: resetCode,
         resetCodeExpiry: resetCodeExpiry
       }
     });
 &nbsp;
-    // In production, send email with reset code
-    // For now, return it (DEV MODE ONLY)
+    // Send email with reset code
+    const emailSent = <span class="cstat-no" title="statement not covered" >await sendPasswordResetEmail(email, resetCode);</span>
+&nbsp;
+    // In production, don't send code in response
+    // In development, include it for testing
     const isDev = <span class="cstat-no" title="statement not covered" >process.env.NODE_ENV !== 'production';</span>
 <span class="cstat-no" title="statement not covered" >    res.json({ </span>
-      message: 'Password reset code sent to email',
-      resetCode: isDev ? resetCode : undefined, // Only in dev
+      message: emailSent 
+        ? 'Password reset code has been sent to your email. Check your inbox and spam folder.'
+        : 'A reset code was generated. Please check your email. If you did not receive it, contact support.',
+      code: isDev ? resetCode : undefined,
       expiryMinutes: 15
     });
   } catch (error) {
@@ -1909,7 +1918,7 @@ export const resetPassword = <span class="fstat-no" title="function not covered"
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-31T08:19:36.550Z
+                at 2026-03-31T08:31:57.007Z
             </div>
         <script src="prettify.js"></script>
         <script>
