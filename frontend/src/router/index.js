@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import Welcome from '../views/Welcome.vue'
 import Dashboard from '../views/Dashboard.vue'
 import MetricsList from '../views/MetricsList.vue'
 import MetricDetails from '../views/MetricDetails.vue'
@@ -17,6 +18,12 @@ import AdminPanel from '../views/AdminPanel.vue'
 
 const routes = [
   {
+    path: '/',
+    name: 'Welcome',
+    component: Welcome,
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: Login
@@ -27,7 +34,7 @@ const routes = [
     component: () => import('../views/Register.vue')
   },
   {
-    path: '/',
+    path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
     meta: { requiresAuth: true }
@@ -73,19 +80,19 @@ const routes = [
     path: '/about',
     name: 'About',
     component: About,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/glossary',
     name: 'Glossary',
     component: Glossary,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/methodology',
     name: 'Methodology',
     component: Methodology,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/gaps',
@@ -115,6 +122,12 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+  
+  // If authenticated user visits home, redirect to dashboard
+  if (to.path === '/' && authStore.isAuthenticated) {
+    next({ name: 'Dashboard' })
+    return
+  }
   
   if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
