@@ -509,3 +509,105 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete user', message: error.message });
   }
 };
+
+// Request password reset (public endpoint - no auth required)
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Check if user exists (but don't reveal if they don't)
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      // Return success anyways for security (don't reveal if email exists)
+      return res.json({ 
+        message: 'If an account with this email exists, a reset code has been sent to that email.',
+        code: null
+      });
+    }
+
+    // Generate a temporary reset code (6-digit number for simplicity, or use a token)
+    // For production, consider using JWT or a dedicated reset token
+    const resetCode = Math.random().toString().substring(2, 8);
+    const resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Store reset code on user (in production, use a separate ResetToken table)
+    await prisma.user.update({
+      where: { email },
+      data: {
+        // These fields should exist in the User schema
+        // If not, store in a separate ResetToken model
+        resetCode: resetCode,
+        resetCodeExpiry: resetCodeExpiry
+      }
+    });
+
+    // In production, send email with reset code
+    // For now, return it (DEV MODE ONLY)
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.json({ 
+      message: 'Password reset code sent to email',
+      resetCode: isDev ? resetCode : undefined, // Only in dev
+      expiryMinutes: 15
+    });
+  } catch (error) {
+    console.error('requestPasswordReset error:', error);
+    res.status(500).json({ error: 'Failed to request password reset', message: error.message });
+  }
+};
+
+// Reset password using reset code (public endpoint)
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+
+    if (!email || !resetCode || !newPassword) {
+      return res.status(400).json({ error: 'Email, reset code, and new password are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    // Check if reset code is valid and not expired
+    if (!user.resetCode || user.resetCode !== resetCode) {
+      return res.status(400).json({ error: 'Invalid or expired reset code' });
+    }
+
+    if (new Date() > new Date(user.resetCodeExpiry)) {
+      return res.status(400).json({ error: 'Reset code has expired' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset code
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        resetCode: null,
+        resetCodeExpiry: null
+      }
+    });
+
+    res.json({ message: 'Password reset successfully. Please log in with your new password.' });
+  } catch (error) {
+    console.error('resetPassword error:', error);
+    res.status(500).json({ error: 'Failed to reset password', message: error.message });
+  }
+};

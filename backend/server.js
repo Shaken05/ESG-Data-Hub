@@ -12,6 +12,7 @@ import standardsRoutes from './routes/standardsRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import gapsRoutes from './routes/gapsRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import { PrismaClient } from '@prisma/client';
 
@@ -60,6 +61,7 @@ app.use('/api/standards', standardsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/gaps', authMiddleware, gapsRoutes);
 
 // Root route (non-API) redirect to health check or frontend
 app.get('/', (req, res) => {

@@ -86,7 +86,8 @@ export const createMetric = async (req, res) => {
         scope,
         definition,
         unit,
-        status: status || 'PLANNED'
+        status: status || 'PLANNED',
+        createdBy: req.user.id
       }
     });
     
@@ -133,25 +134,37 @@ export const updateMetric = async (req, res) => {
   }
 };
 
-// Delete metric (editor and admin only)
+// Delete metric (editor and admin only; users can only delete their own, admins can delete any)
 export const deleteMetric = async (req, res) => {
   try {
-    // Check if user is editor or admin
     if (!req.user || !['admin', 'editor'].includes(req.user.role)) {
       return res.status(403).json({ error: 'You do not have permission to delete metrics' });
     }
     
     const { id } = req.params;
+    const metricId = parseInt(id);
     
-    // Get metric name for logging
-    const metric = await prisma.metric.findUnique({ where: { id: parseInt(id) } });
+    // Get metric to check ownership
+    const metric = await prisma.metric.findUnique({ where: { id: metricId } });
+    
+    if (!metric) {
+      return res.status(404).json({ error: 'Metric not found' });
+    }
+    
+    // Check ownership: only admin OR the user who created it can delete
+    const isOwner = metric.createdBy === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'You can only delete metrics that you created. Admins can delete any metric.' });
+    }
     
     await prisma.metric.delete({
-      where: { id: parseInt(id) }
+      where: { id: metricId }
     });
     
     // Log action
-    await logAction(req.user.id, 'DELETE', 'METRIC', parseInt(id), { name: metric?.name });
+    await logAction(req.user.id, 'DELETE', 'METRIC', metricId, { name: metric.name });
     
     res.json({ message: 'Metric deleted successfully' });
   } catch (error) {

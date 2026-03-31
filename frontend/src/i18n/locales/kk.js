@@ -27,6 +27,7 @@ export default {
     save: 'Сақтау',
     cancel: 'Болдырмау',
     delete: 'Жою',
+    deleting: 'Жойылуда...',
     edit: 'Өңдеу',
     create: 'Жасау',
     close: 'Жабу',
@@ -133,6 +134,8 @@ export default {
     noLinks: 'Бұл метрикаға әлі көздер немесе сақтау орны тіркелмеген.',
     edit: 'Өңдеу',
     updateMetric: 'Сақтау',
+    deleteConfirm: 'Сіз осы метриканы жойғыңыз келеді ме? Бұл әрекетті болдырмау мүмкін емес.',
+    deleteSuccess: 'Метрика сәтті жойылды.',
   },
   dataSources: {
     title: 'Дерек көздері',

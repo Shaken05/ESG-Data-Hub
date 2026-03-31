@@ -166,7 +166,7 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking (comma-separated: "GRI,SASB,TCFD")
         const standardsColumn = row.standards || row.Standards || row.standard || row.Standard || '';
@@ -415,7 +415,7 @@ export const importMetricsManual = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking
         const standardsArray = row.standards || [];
@@ -529,7 +529,7 @@ export const importMetricsCSV = async (req, res) => {
           continue;
         }
         
-        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
+        const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking
         const standardsColumn = row.standards || row.Standards || row.standard || row.Standard || '';
@@ -668,7 +668,7 @@ export const addSingleMetric = async (req, res) => {
       status: 'COMPLETED'
     });
     
-    const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id } });
+    const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
     
     // Handle standards linking
     const standardMap = {};

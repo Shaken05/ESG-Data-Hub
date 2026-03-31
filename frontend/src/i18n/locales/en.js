@@ -27,6 +27,7 @@ export default {
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
+    deleting: 'Deleting...',
     edit: 'Edit',
     create: 'Create',
     close: 'Close',
@@ -133,6 +134,8 @@ export default {
     noLinks: 'No data sources or storage locations linked to this metric yet.',
     edit: 'Edit',
     updateMetric: 'Update Metric',
+    deleteConfirm: 'Are you sure you want to delete this metric? This cannot be undone.',
+    deleteSuccess: 'Metric deleted successfully.',
   },
   dataSources: {
     title: 'Data Sources',

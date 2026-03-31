@@ -38,6 +38,9 @@
           <button v-if="authStore.isEditor" @click="showEditModal = true" class="btn-secondary">
             {{ t('metricDetails.edit') }}
           </button>
+          <button v-if="canDelete" @click="handleDelete" class="btn-danger" :disabled="deleting">
+            {{ deleting ? t('common.deleting') : t('common.delete') }}
+          </button>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
@@ -281,10 +284,17 @@ const authStore = useAuthStore()
 
 const showEditModal = ref(false)
 const editForm = ref({})
+const deleting = ref(false)
 
 const loading = computed(() => metricsStore.loading)
 const error = computed(() => metricsStore.error)
 const metric = computed(() => metricsStore.currentMetric)
+
+// Can delete if: user is admin OR user created the metric
+const canDelete = computed(() => {
+  if (!authStore.isEditor || !metric.value) return false
+  return authStore.user.role === 'admin' || metric.value.createdBy === authStore.user.id
+})
 
 onMounted(async () => {
   try {
@@ -330,6 +340,23 @@ async function handleUpdate() {
     showEditModal.value = false
   } catch (err) {
     alert('Error updating metric: ' + err.message)
+  }
+}
+
+async function handleDelete() {
+  if (!window.confirm(t('metricDetails.deleteConfirm'))) {
+    return
+  }
+
+  deleting.value = true
+  try {
+    await metricsStore.deleteMetric(metric.value.id)
+    alert(t('metricDetails.deleteSuccess'))
+    router.push('/metrics')
+  } catch (err) {
+    alert('Error deleting metric: ' + (err.response?.data?.error || err.message))
+  } finally {
+    deleting.value = false
   }
 }
 

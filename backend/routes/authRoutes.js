@@ -9,7 +9,9 @@ import {
   getAllUsers,
   updateUserRole,
   deactivateUser,
-  deleteUser
+  deleteUser,
+  requestPasswordReset,
+  resetPassword
 } from '../controllers/authController.js';
 import authMiddleware, { adminOnly } from '../middleware/authMiddleware.js';
 
@@ -19,6 +21,8 @@ const router = express.Router();
 router.post('/login', login);
 router.post('/register', registerPublic);
 router.get('/check-email', checkEmail);
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', resetPassword);
 
 // Protected routes - require authentication
 router.get('/me', authMiddleware, getCurrentUser);
