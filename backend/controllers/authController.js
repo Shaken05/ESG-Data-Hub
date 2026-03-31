@@ -164,10 +164,11 @@ export const registerPublic = async (req, res) => {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' });
     }
 
-    const mailboxOk = await verifyEmailMailbox(email);
-    if (!mailboxOk) {
-      return res.status(400).json({ error: 'Email address does not exist' });
-    }
+    // Email mailbox verification temporarily disabled
+    // const mailboxOk = await verifyEmailMailbox(email);
+    // if (!mailboxOk) {
+    //   return res.status(400).json({ error: 'Email address does not exist' });
+    // }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -209,10 +210,11 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ error: 'Email must be a valid @kbtu.kz address' });
     }
 
-    const mailboxOk = await verifyEmailMailbox(email);
-    if (!mailboxOk) {
-      return res.status(400).json({ error: 'Email address does not exist' });
-    }
+    // Email mailbox verification temporarily disabled
+    // const mailboxOk = await verifyEmailMailbox(email);
+    // if (!mailboxOk) {
+    //   return res.status(400).json({ error: 'Email address does not exist' });
+    // }
 
     const validRoles = ['admin', 'editor', 'viewer'];
     const userRole = role && validRoles.includes(role) ? role : 'viewer';
@@ -415,10 +417,11 @@ export const checkEmail = async (req, res) => {
       return res.status(400).json({ error: 'Registration allowed only for @kbtu.kz email addresses' })
     }
 
-    const mailboxOk = await verifyEmailMailbox(email);
-    if (!mailboxOk) {
-      return res.status(400).json({ error: 'Email address does not exist' });
-    }
+    // Email mailbox verification temporarily disabled
+    // const mailboxOk = await verifyEmailMailbox(email);
+    // if (!mailboxOk) {
+    //   return res.status(400).json({ error: 'Email address does not exist' });
+    // }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     return res.json({ valid: true, available: !existingUser });
