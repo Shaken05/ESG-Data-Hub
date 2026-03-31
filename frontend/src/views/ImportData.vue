@@ -366,7 +366,6 @@ const activeTab = ref('sheets');
 const loading = ref(false);
 const sheetsUrl = ref('');
 const selectedFile = ref(null);
-const csvSingleMetric = ref(false);
 const jsonInput = ref('');
 const importResult = ref(null);
 const errorMessage = ref('');
