@@ -58,9 +58,67 @@
               />
             </div>
 
+            <!-- Sheets Metric Metadata Form -->
+            <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded border">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Metric Name *
+                </label>
+                <input
+                  v-model="sheetsMetric.name"
+                  type="text"
+                  placeholder="e.g., Energy Consumption Data"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select v-model="sheetsMetric.category" class="input-field">
+                  <option value="E">E - Environmental</option>
+                  <option value="S">S - Social</option>
+                  <option value="G">G - Governance</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  v-model="sheetsMetric.description"
+                  placeholder="Brief description of this dataset"
+                  rows="2"
+                  class="input-field"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  v-model="sheetsMetric.subcategory"
+                  type="text"
+                  placeholder="e.g., Energy"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Unit
+                </label>
+                <input
+                  v-model="sheetsMetric.unit"
+                  type="text"
+                  placeholder="e.g., kWh"
+                  class="input-field"
+                />
+              </div>
+            </div>
+
             <button
               @click="handleImport('sheets')"
-              :disabled="!sheetsUrl || loading"
+              :disabled="!sheetsUrl || !sheetsMetric.name || loading"
               class="btn-primary disabled:opacity-50"
             >
               {{ loading === 'sheets' ? 'Importing...' : '📥 Import from Google Sheets' }}
@@ -95,21 +153,74 @@
                 <p class="text-sm text-green-700">{{ formatFileSize(selectedFile.size) }}</p>
               </div>
               <button
-                @click="selectedFile = null; csvSingleMetric.value = false; $refs.csvInput.value = ''"
+                @click="selectedFile = null; csvMetric.name = ''; $refs.csvInput.value = ''"
                 class="text-red-600 hover:text-red-900"
               >
                 ✕
               </button>
             </div>
 
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-              <input type="checkbox" v-model="csvSingleMetric" class="checkbox" />
-              <span>Create one metric from entire file (single metric mode)</span>
-            </label>
+            <!-- CSV Metric Metadata Form -->
+            <div v-if="selectedFile" class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded border">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Metric Name *
+                </label>
+                <input
+                  v-model="csvMetric.name"
+                  type="text"
+                  placeholder="e.g., Energy Consumption Data"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select v-model="csvMetric.category" class="input-field">
+                  <option value="E">E - Environmental</option>
+                  <option value="S">S - Social</option>
+                  <option value="G">G - Governance</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  v-model="csvMetric.description"
+                  placeholder="Brief description of this dataset"
+                  rows="2"
+                  class="input-field"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  v-model="csvMetric.subcategory"
+                  type="text"
+                  placeholder="e.g., Energy"
+                  class="input-field"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Unit
+                </label>
+                <input
+                  v-model="csvMetric.unit"
+                  type="text"
+                  placeholder="e.g., kWh"
+                  class="input-field"
+                />
+              </div>
+            </div>
 
             <button
               @click="handleImport('csv')"
-              :disabled="!selectedFile || loading"
+              :disabled="!selectedFile || !csvMetric.name || loading"
               class="btn-primary w-full disabled:opacity-50"
             >
               {{ loading === 'csv' ? 'Uploading...' : '📤 Upload CSV' }}
@@ -365,7 +476,6 @@ const tabs = [
 const activeTab = ref('sheets');
 const loading = ref(false);
 const sheetsUrl = ref('');
-const selectedFile = ref(null);
 const jsonInput = ref('');
 const importResult = ref(null);
 const errorMessage = ref('');
@@ -373,6 +483,28 @@ const errorMessage = ref('');
 const importBatches = ref([]);
 const batchesLoading = ref(false);
 const batchesError = ref('');
+
+const sheetsMetric = ref({
+  name: '',
+  description: '',
+  category: 'E',
+  subcategory: '',
+  unit: '',
+  standards: '',
+  status: 'COLLECTED'
+});
+
+const selectedFile = ref(null);
+
+const csvMetric = ref({
+  name: '',
+  description: '',
+  category: 'E',
+  subcategory: '',
+  unit: '',
+  standards: '',
+  status: 'COLLECTED'
+});
 
 const singleMetric = ref({
   name: '',
@@ -419,9 +551,23 @@ const handleImport = async (type) => {
         loading.value = false;
         return;
       }
+      if (!sheetsMetric.value.name) {
+        errorMessage.value = 'Please enter metric name';
+        loading.value = false;
+        return;
+      }
       response = await axios.post(
         `${API_URL}/import/metrics`,
-        { url: sheetsUrl.value },
+        {
+          url: sheetsUrl.value,
+          name: sheetsMetric.value.name,
+          category: sheetsMetric.value.category,
+          description: sheetsMetric.value.description,
+          subcategory: sheetsMetric.value.subcategory,
+          unit: sheetsMetric.value.unit,
+          standards: sheetsMetric.value.standards,
+          status: sheetsMetric.value.status
+        },
         { headers: { Authorization: `Bearer ${authStore.token}` } }
       );
     } else if (type === 'csv') {
@@ -430,11 +576,20 @@ const handleImport = async (type) => {
         loading.value = false;
         return;
       }
+      if (!csvMetric.value.name) {
+        errorMessage.value = 'Please enter metric name';
+        loading.value = false;
+        return;
+      }
       const formData = new FormData();
       formData.append('file', selectedFile.value);
-      if (csvSingleMetric.value) {
-        formData.append('single', 'true');
-      }
+      formData.append('name', csvMetric.value.name);
+      formData.append('category', csvMetric.value.category);
+      if (csvMetric.value.description) formData.append('description', csvMetric.value.description);
+      if (csvMetric.value.subcategory) formData.append('subcategory', csvMetric.value.subcategory);
+      if (csvMetric.value.unit) formData.append('unit', csvMetric.value.unit);
+      if (csvMetric.value.standards) formData.append('standards', csvMetric.value.standards);
+      formData.append('status', csvMetric.value.status);
       response = await axios.post(
         `${API_URL}/import/csv/metrics`,
         formData,
@@ -485,9 +640,14 @@ const handleImport = async (type) => {
     
     // Reset form if successful
     if (response.data.success) {
-      if (type === 'sheets') sheetsUrl.value = '';
+      if (type === 'sheets') {
+        sheetsUrl.value = '';
+        sheetsMetric.value = { name: '', description: '', category: 'E', subcategory: '', unit: '', standards: '', status: 'COLLECTED' };
+      }
       if (type === 'csv') {
-        selectedFile.value = null;        csvSingleMetric.value = false;        if (this.$refs?.csvInput) this.$refs.csvInput.value = '';
+        selectedFile.value = null;        
+        csvMetric.value = { name: '', description: '', category: 'E', subcategory: '', unit: '', standards: '', status: 'COLLECTED' };
+        if (this.$refs?.csvInput) this.$refs.csvInput.value = '';
       }
       if (type === 'single') {
         singleMetric.value = {

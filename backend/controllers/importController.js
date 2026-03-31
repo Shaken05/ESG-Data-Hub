@@ -80,6 +80,20 @@ const parseCSV = (csvText) => {
   return rows;
 };
 
+// Clean filename from encoding artifacts
+const cleanFileName = (filename) => {
+  if (!filename) return '';
+  // Remove extension, clean special characters, decode unicode
+  let clean = filename.replace(/\.[^/.]+$/, ''); // remove extension
+  // Replace common encoding artifacts (control chars, mojibake, etc)
+  clean = clean
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // remove control characters
+    .replace(/[^\w\s\-]/gu, '') // remove special characters except dash and spaces
+    .replace(/\s+/g, ' ') // normalize spaces
+    .trim();
+  return clean || 'CSV Import';
+};
+
 // Convert an import row with arbitrary keys into a Metric model-friendly object
 const getMetricDataFromRow = (row, index) => {
   const normalized = {};
@@ -451,7 +465,7 @@ export const importMetricsCSV = async (req, res) => {
 
     // Save uploaded CSV file as one metric (no row splitting)
     const metricData = {
-      name: req.body.name || req.file.originalname || `CSV import ${new Date().toISOString()}`,
+      name: req.body.name || cleanFileName(req.file.originalname) || `CSV import ${new Date().toISOString()}`,
       description: req.body.description || `CSV file import (${req.file.originalname || 'unknown'}) with ${rows.length} rows`,
       category: req.body.category || 'E',
       subcategory: req.body.subcategory || null,

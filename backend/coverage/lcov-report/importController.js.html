@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6% </span>
+                <span class="strong">6.27% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/233</span>
+                <span class='fraction'>15/239</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/211</span>
+                <span class='fraction'>0/215</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/34</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">6.39% </span>
+                <span class="strong">6.69% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>14/219</span>
+                <span class='fraction'>15/224</span>
             </div>
         
             
@@ -692,7 +692,21 @@
 <a name='L627'></a><a href='#L627'>627</a>
 <a name='L628'></a><a href='#L628'>628</a>
 <a name='L629'></a><a href='#L629'>629</a>
-<a name='L630'></a><a href='#L630'>630</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L630'></a><a href='#L630'>630</a>
+<a name='L631'></a><a href='#L631'>631</a>
+<a name='L632'></a><a href='#L632'>632</a>
+<a name='L633'></a><a href='#L633'>633</a>
+<a name='L634'></a><a href='#L634'>634</a>
+<a name='L635'></a><a href='#L635'>635</a>
+<a name='L636'></a><a href='#L636'>636</a>
+<a name='L637'></a><a href='#L637'>637</a>
+<a name='L638'></a><a href='#L638'>638</a>
+<a name='L639'></a><a href='#L639'>639</a>
+<a name='L640'></a><a href='#L640'>640</a>
+<a name='L641'></a><a href='#L641'>641</a>
+<a name='L642'></a><a href='#L642'>642</a>
+<a name='L643'></a><a href='#L643'>643</a>
+<a name='L644'></a><a href='#L644'>644</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -769,6 +783,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1403,6 +1431,20 @@ const parseCSV = <span class="fstat-no" title="function not covered" >(c</span>s
 <span class="cstat-no" title="statement not covered" >  return rows;</span>
 };
 &nbsp;
+// Clean filename from encoding artifacts
+const cleanFileName = <span class="fstat-no" title="function not covered" >(f</span>ilename) =&gt; {
+<span class="cstat-no" title="statement not covered" >  if (!filename) <span class="cstat-no" title="statement not covered" >return '';</span></span>
+  // Remove extension, clean special characters, decode unicode
+  let clean = <span class="cstat-no" title="statement not covered" >filename.replace(/\.[^/.]+$/, '');</span> // remove extension
+  // Replace common encoding artifacts (control chars, mojibake, etc)
+<span class="cstat-no" title="statement not covered" >  clean = clean</span>
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // remove control characters
+    .replace(/[^\w\s\-]/gu, '') // remove special characters except dash and spaces
+    .replace(/\s+/g, ' ') // normalize spaces
+    .trim();
+<span class="cstat-no" title="statement not covered" >  return clean || 'CSV Import';</span>
+};
+&nbsp;
 // Convert an import row with arbitrary keys into a Metric model-friendly object
 const getMetricDataFromRow = <span class="fstat-no" title="function not covered" >(r</span>ow, index) =&gt; {
   const normalized = <span class="cstat-no" title="statement not covered" >{};</span>
@@ -1774,7 +1816,7 @@ export const importMetricsCSV = <span class="fstat-no" title="function not cover
 &nbsp;
     // Save uploaded CSV file as one metric (no row splitting)
     const metricData = <span class="cstat-no" title="statement not covered" >{</span>
-      name: req.body.name || req.file.originalname || `CSV import ${new Date().toISOString()}`,
+      name: req.body.name || cleanFileName(req.file.originalname) || `CSV import ${new Date().toISOString()}`,
       description: req.body.description || `CSV file import (${req.file.originalname || 'unknown'}) with ${rows.length} rows`,
       category: req.body.category || 'E',
       subcategory: req.body.subcategory || null,
@@ -1957,7 +1999,7 @@ export const addSingleMetric = <span class="fstat-no" title="function not covere
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-31T09:10:35.970Z
+                at 2026-03-31T09:18:43.285Z
             </div>
         <script src="prettify.js"></script>
         <script>
