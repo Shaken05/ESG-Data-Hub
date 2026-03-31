@@ -80,6 +80,53 @@ const parseCSV = (csvText) => {
   return rows;
 };
 
+// Convert an import row with arbitrary keys into a Metric model-friendly object
+const getMetricDataFromRow = (row, index) => {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    const trimmed = String(key || '').trim();
+    if (trimmed) normalized[trimmed.toLowerCase()] = value;
+  }
+
+  const pick = (keys) => {
+    for (const key of keys) {
+      if (normalized[key] !== undefined && normalized[key] !== null && String(normalized[key]).trim() !== '') {
+        return String(normalized[key]).trim();
+      }
+    }
+    return '';
+  };
+
+  const nameFromRow = pick(['name', 'metric_name', 'metric', 'title', 'indicator']);
+  const generatedName = nameFromRow || (() => {
+    const firstValue = Object.values(normalized).find(v => v !== undefined && v !== null && String(v).trim() !== '');
+    if (firstValue) {
+      return String(firstValue).trim().slice(0, 150);
+    }
+    return `Imported Metric #${index + 1}`;
+  })();
+
+  const category = pick(['category', 'cat', 'type']) || 'E';
+  const status = pick(['status', 'state']) || 'PLANNED';
+
+  const rowString = JSON.stringify(row || {});
+  const definitionValue = pick(['definition', 'def']) || rowString;
+  const descriptionValue = pick(['description', 'desc']) || `Imported raw row: ${rowString}`;
+
+  const mapped = {
+    name: generatedName,
+    description: descriptionValue,
+    category: ['E', 'S', 'G'].includes(category.toUpperCase()) ? category.toUpperCase() : 'E',
+    subcategory: pick(['subcategory', 'sub_category', 'subcat']) || null,
+    scope: pick(['scope', 'scopes']) || null,
+    definition: definitionValue,
+    unit: pick(['unit', 'uom', 'measure']) || null,
+    status: ['COLLECTED', 'PARTIAL', 'PLANNED', 'IN_PROGRESS', 'NOT_COLLECTED'].includes(status.toUpperCase()) ? status.toUpperCase() : 'PLANNED'
+  };
+
+  return mapped;
+};
+
 // Create import batch record
 const createImportBatch = async ({ userId, source, sourceUrl = null, fileName = null, rowCount = 0, status = 'PENDING' }) => {
   const batch = await prisma.importBatch.create({
@@ -134,6 +181,43 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
     if (rows.length === 0) {
       return res.status(400).json({ error: 'No data found in spreadsheet' });
     }
+
+    const isSingleMetric = req.query.single === 'true' || req.body.single === 'true' || req.body.single === true;
+
+    if (isSingleMetric) {
+      const previewRows = rows.slice(0, 20);
+      const metricData = {
+        name: req.body.name || `Google Sheets import ${new Date().toISOString()}`,
+        description: req.body.description || `Single metric from Google Sheets URL ${url}. Rows: ${rows.length}`,
+        category: req.body.category || 'E',
+        subcategory: req.body.subcategory || null,
+        scope: req.body.scope || null,
+        definition: req.body.definition || `Row preview: ${JSON.stringify(previewRows)}\nTotal rows: ${rows.length}`,
+        unit: req.body.unit || null,
+        status: req.body.status || 'COLLECTED'
+      };
+      const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
+
+      if (req.body.standards) {
+        const standardMap = {};
+        (await prisma.standard.findMany()).forEach(s => {
+          standardMap[s.name.toLowerCase()] = s.id;
+          if (s.code) standardMap[s.code.toLowerCase()] = s.id;
+        });
+        const standardsList = String(req.body.standards).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        for (const stdName of standardsList) {
+          const standardId = standardMap[stdName];
+          if (standardId) {
+            await prisma.metricStandard.create({ data: { metricId: metric.id, standardId } });
+          }
+        }
+      }
+
+      await logAction(req.user.id, 'CREATE', 'METRIC', metric.id, { name: metric.name, category: metric.category, source: 'Google Sheets Import (single metric)' });
+      await prisma.importBatch.update({ where: { id: batch.id }, data: { status: 'COMPLETED' } });
+
+      return res.json({ success: true, batchId: batch.id, imported: 1, errors: 0, metrics: [metric] });
+    }
     
     // Get all standards for linking
     const standards = await prisma.standard.findMany();
@@ -147,25 +231,11 @@ export const importMetricsFromGoogleSheets = async (req, res) => {
     const importedMetrics = [];
     const errors = [];
     
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
       try {
-        // Map CSV columns to database fields (supports new schema)
-        const metricData = {
-          name: row.name || row.Name || row.metric_name || '',
-          description: row.description || row.Description || '',
-          category: row.category || row.Category || 'E',
-          subcategory: row.subcategory || row.Subcategory || null,
-          scope: row.scope || row.Scope || null,
-          definition: row.definition || row.Definition || '',
-          unit: row.unit || row.Unit || '',
-          status: row.status || row.Status || 'PLANNED'
-        };
-        
-        if (!metricData.name || metricData.name.trim() === '') {
-          errors.push({ row: JSON.stringify(row), error: 'Missing metric name' });
-          continue;
-        }
-        
+        const metricData = getMetricDataFromRow(row, rowIndex);
+
         const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking (comma-separated: "GRI,SASB,TCFD")
@@ -311,25 +381,20 @@ export const getImportTemplate = async (req, res) => {
   try {
     const templates = {
       metrics: {
-        columns: ['name', 'description', 'category', 'subcategory', 'scope', 'definition', 'unit', 'standards', 'status'],
+        columns: ['any columns are accepted; no strict template'],
         example: {
           name: 'Energy Consumption',
           description: 'Total electricity consumption',
           category: 'E',
           subcategory: 'Energy',
-          scope: 'Scope 1 & 2',
-          definition: 'Direct and indirect GHG emissions from operations',
           unit: 'kWh',
-          standards: 'GRI, SASB, TCFD',
           status: 'COLLECTED'
         },
         validValues: {
           category: ['E', 'S', 'G'],
-          status: ['COLLECTED', 'PARTIAL', 'PLANNED'],
-          scope: ['Scope 1', 'Scope 2', 'Scope 3', null],
-          standards: ['GRI', 'SASB', 'TCFD', 'SDG', 'STARS', 'comma-separated for multiple']
+          status: ['COLLECTED', 'PARTIAL', 'PLANNED', 'IN_PROGRESS', 'NOT_COLLECTED']
         },
-        notes: 'subcategory, scope, and definition are optional. Standards field accepts comma-separated values (e.g., "GRI,SASB,TCFD")'
+        notes: 'Any additional fields are accepted and stored in metric definition/description when no dedicated field is available. Name is inferred from first non-empty cell if missing.'
       },
       sources: {
         columns: ['name', 'type', 'format', 'update_frequency'],
@@ -397,24 +462,10 @@ export const importMetricsManual = async (req, res) => {
     const importedMetrics = [];
     const errors = [];
     
-    for (const row of metrics) {
+    for (let rowIndex = 0; rowIndex < metrics.length; rowIndex += 1) {
+      const row = metrics[rowIndex];
       try {
-        const metricData = {
-          name: row.name || '',
-          description: row.description || '',
-          category: row.category || 'E',
-          subcategory: row.subcategory || null,
-          scope: row.scope || null,
-          definition: row.definition || '',
-          unit: row.unit || '',
-          status: row.status || 'PLANNED'
-        };
-        
-        if (!metricData.name || metricData.name.trim() === '') {
-          errors.push({ metric: JSON.stringify(row), error: 'Missing metric name' });
-          continue;
-        }
-        
+        const metricData = getMetricDataFromRow(row, rowIndex);
         const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking
@@ -483,6 +534,8 @@ export const importMetricsCSV = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'CSV file is required' });
     }
+
+    const isSingleMetric = req.query.single === 'true' || req.body.single === 'true' || req.body.single === true;
     
     // Parse CSV from file
     const csvText = req.file.buffer.toString('utf-8');
@@ -494,12 +547,59 @@ export const importMetricsCSV = async (req, res) => {
 
     const batch = await createImportBatch({
       userId: req.user.id,
-      source: 'CSV_UPLOAD',
+      source: isSingleMetric ? 'CSV_UPLOAD_SINGLE' : 'CSV_UPLOAD',
       fileName: req.file.originalname || null,
-      rowCount: rows.length,
+      rowCount: isSingleMetric ? 1 : rows.length,
       status: 'PENDING'
     });
     
+    if (isSingleMetric) {
+      const previewRows = rows.slice(0, 20);
+      const metricData = {
+        name: req.body.name || req.file.originalname || `CSV import ${new Date().toISOString()}`,
+        description: req.body.description || `Single metric from CSV file (${req.file.originalname}), source rows: ${rows.length}`,
+        category: req.body.category || 'E',
+        subcategory: req.body.subcategory || null,
+        scope: req.body.scope || null,
+        definition: req.body.definition || `CSV rows (up to 20 preview): ${JSON.stringify(previewRows)}\nTotal rows: ${rows.length}`,
+        unit: req.body.unit || null,
+        status: req.body.status || 'COLLECTED'
+      };
+
+      const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
+
+      if (req.body.standards) {
+        const standardMap = {};
+        (await prisma.standard.findMany()).forEach(s => {
+          standardMap[s.name.toLowerCase()] = s.id;
+          if (s.code) standardMap[s.code.toLowerCase()] = s.id;
+        });
+        const standardsList = String(req.body.standards).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        for (const stdName of standardsList) {
+          const standardId = standardMap[stdName];
+          if (standardId) {
+            await prisma.metricStandard.create({ data: { metricId: metric.id, standardId } });
+          }
+        }
+      }
+
+      await logAction(req.user.id, 'CREATE', 'METRIC', metric.id, {
+        name: metric.name,
+        category: metric.category,
+        source: 'CSV File Import (single metric)'
+      });
+
+      await prisma.importBatch.update({ where: { id: batch.id }, data: { status: 'COMPLETED' } });
+
+      return res.json({
+        success: true,
+        batchId: batch.id,
+        imported: 1,
+        errors: 0,
+        metrics: [metric]
+      });
+    }
+
     // Get all standards for linking
     const standards = await prisma.standard.findMany();
     const standardMap = {};
@@ -511,24 +611,10 @@ export const importMetricsCSV = async (req, res) => {
     const importedMetrics = [];
     const errors = [];
     
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
       try {
-        const metricData = {
-          name: row.name || row.Name || row.metric_name || '',
-          description: row.description || row.Description || '',
-          category: row.category || row.Category || 'E',
-          subcategory: row.subcategory || row.Subcategory || null,
-          scope: row.scope || row.Scope || null,
-          definition: row.definition || row.Definition || '',
-          unit: row.unit || row.Unit || '',
-          status: row.status || row.Status || 'PLANNED'
-        };
-        
-        if (!metricData.name || metricData.name.trim() === '') {
-          errors.push({ row: JSON.stringify(row), error: 'Missing metric name' });
-          continue;
-        }
-        
+        const metricData = getMetricDataFromRow(row, rowIndex);
         const metric = await prisma.metric.create({ data: { ...metricData, importBatchId: batch.id, createdBy: req.user.id } });
         
         // Handle standards linking

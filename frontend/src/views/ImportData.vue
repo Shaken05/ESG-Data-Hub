@@ -95,12 +95,17 @@
                 <p class="text-sm text-green-700">{{ formatFileSize(selectedFile.size) }}</p>
               </div>
               <button
-                @click="selectedFile = null; $refs.csvInput.value = ''"
+                @click="selectedFile = null; csvSingleMetric.value = false; $refs.csvInput.value = ''"
                 class="text-red-600 hover:text-red-900"
               >
                 ✕
               </button>
             </div>
+
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" v-model="csvSingleMetric" class="checkbox" />
+              <span>Create one metric from entire file (single metric mode)</span>
+            </label>
 
             <button
               @click="handleImport('csv')"
@@ -361,6 +366,7 @@ const activeTab = ref('sheets');
 const loading = ref(false);
 const sheetsUrl = ref('');
 const selectedFile = ref(null);
+const csvSingleMetric = ref(false);
 const jsonInput = ref('');
 const importResult = ref(null);
 const errorMessage = ref('');
@@ -427,6 +433,9 @@ const handleImport = async (type) => {
       }
       const formData = new FormData();
       formData.append('file', selectedFile.value);
+      if (csvSingleMetric.value) {
+        formData.append('single', 'true');
+      }
       response = await axios.post(
         `${API_URL}/import/csv/metrics`,
         formData,
@@ -479,8 +488,7 @@ const handleImport = async (type) => {
     if (response.data.success) {
       if (type === 'sheets') sheetsUrl.value = '';
       if (type === 'csv') {
-        selectedFile.value = null;
-        if (this.$refs?.csvInput) this.$refs.csvInput.value = '';
+        selectedFile.value = null;        csvSingleMetric.value = false;        if (this.$refs?.csvInput) this.$refs.csvInput.value = '';
       }
       if (type === 'single') {
         singleMetric.value = {
